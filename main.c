@@ -46,6 +46,7 @@ int checkInteger(char *num){
 
 
 
+
 int main(int argc, char *argv[]) {
 
   // validating the initiating command: dkt <ip> <port>
@@ -85,9 +86,23 @@ int main(int argc, char *argv[]) {
         //printf("token %s\n", token);
 
         if(strcmp(token, "new") == 0){
-          //do ring creation stuff here...
+          int nArgs=2;
+          int i=0;
+          while (token != NULL){
+            if(token[0] == '\n') break;
+            else {
+              token = strtok(NULL, " ");
+              //printf("token %s\n", token);
+              i++;
+            }
+          }
+          //printf("%d\n", i);
+          if(i > nArgs || i < nArgs) printf("The number of arguments is not the expected!\n");
+          else{
+            //do ring creation stuff here...
 
-          printf("New ring was created!\n");
+            printf("New ring was created!\n");
+        }
         }
         else if(strcmp(token, "entry") == 0){
           //do entry server stuff here...
