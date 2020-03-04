@@ -1,3 +1,19 @@
+
+
+
+
+
+
+
+/******************************** DÚVIDAS ********************************
+
+1- comando dkt após correr o executável, certo?--> acho que não, acho que o comando deve ser ./dkt <ip> <port>, como está feito no que está comentado
+2- 0 é incluído?
+
+*/
+
+
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -10,21 +26,27 @@
 
 
 char cmd[255] = {'\0'};
-char *token[3];
+char *token;
 
 char *ip;
 char *port;
 
-/******************************** DÚVIDAS ********************************
 
-1- comando dkt após correr o executável, certo?--> acho que não, acho que o comando deve ser ./dkt <ip> <port>, como está feito no que está comentado
-2-
+int checkInteger(char *num){
+  int i=0;
+  while (i < strlen(num)){
+    if(num[i] < '0' || num[i] > '9') return 0;
+    printf("Num: %c\n", num[i]);
+    i++;
+  }
+  return 1;
+}
 
-*/
+
 
 int main(int argc, char *argv[]) {
 
-  // validating the comand: dkt <ip> <port>
+  // validating the initiating command: dkt <ip> <port>
   if(argc != 3) {
 
     //write(1, "Invocação da aplicação mal feita! Para invocá-la use: dkt <ip> <port>\n",
@@ -43,25 +65,55 @@ int main(int argc, char *argv[]) {
     }
     printf("\n");*/
     printf("\nApplication initialized!\n");
-    printf("\nIP addr.: %s\nPORT: %s\n", ip, port);
+    printf("\n-IP addr.: %s\n-PORT: %s\n", ip, port);
   }
 
 
   // application loop
   while(strcmp(cmd, "exit\n") != 0){
     memset(cmd, '\0', sizeof(cmd));
+    printf("\n");
 
     if(fgets(cmd, 255, stdin)){
 
       if(strcmp(cmd, "exit\n") == 0) printf("You closed the application!\n\n");
       else{
+        // validating the commands
+        /*token = strtok(cmd, " ");
+        //printf("token %s\n", token);
+
+        if(strcmp(token, "new") == 0){
+          char server;
+
+          while(token != NULL){
+            token = strtok(NULL, " ");
+            printf("token %s\n", token);
+
+            if((token != NULL && token[0] == '\n')){
+              printf("Few arguments input!\n");
+              break;
+            }
+            else if (!checkInteger(token) && token != NULL) {
+              printf("No server number inserted!\n");
+              break;
+            }
+            */
+          }
+
+          //do ring creation stuff here...
+
+          printf("New ring was created!\n");
+        }
 
 
-      // validating the commands
-      //if(strcmp())
+        else printf("No command was recognized!\n");
       }
     }
   }
+
+
+
+
   /*
 
   // validating the comand: dkt <ip> <port>
