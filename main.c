@@ -9,10 +9,18 @@
 
 1- comando dkt após correr o executável, certo?--> acho que não, acho que o comando deve ser ./dkt <ip> <port>, como está feito no que está comentado
 2- 0 é incluído?
+3-
 
-*/
+****************************************************************************/
 
 
+
+
+/******************************** A FAZER *********************************
+
+1- Simplificar a verificação para o primeiro comando, talvez pôr mais geral e que dê para todas
+
+****************************************************************************/
 
 #include <stdio.h>
 #include <unistd.h>
@@ -34,10 +42,11 @@ char *port;
 
 int checkInteger(char *num){
   int i=0;
-  while (i < strlen(num)){
-    if(num[i] < '0' || num[i] > '9') return 0;
 
-    printf("Num: %c\n", num[i]);
+  while (i < strlen(num) && num[i] != '\n' && num[i] != '\0'){
+
+    if(num[i] < '0' || num[i] > '9') return 0;
+    //printf("Num: %c\n", num[i]);
     i++;
   }
   return 1;
@@ -47,26 +56,17 @@ int checkInteger(char *num){
 
 
 
+
 int main(int argc, char *argv[]) {
 
   // validating the initiating command: dkt <ip> <port>
   if(argc != 3) {
-
-    //write(1, "Invocação da aplicação mal feita! Para invocá-la use: dkt <ip> <port>\n",
-    //  strlen("Invocação da aplicação mal feita! Para invocá-la use: dkt <ip> <port>"));
-      printf("\nThe command must be in format 'dkt <ip> <port>'\n\n");
-      exit(0);
-    }
+    printf("\nThe command must be in format 'dkt <ip> <port>'\n\n");
+    exit(0);
+  }
   else {
     ip = argv[1]; port = argv[2];
-    //write(1,"Introduzido: ", 13);
-    /*printf("Command input: ");
-    int i;
-    for (i=0; i<strlen(*argv + i); i++) {
-      //write(1, *(argv + i), strlen(*(argv + i))); write(1, " ", 1);
-      printf("%s ", *(argv + i));
-    }
-    printf("\n");*/
+
     printf("\nApplication initialized!\n");
     printf("\n-IP addr.: %s\n-PORT: %s\n", ip, port);
   }
@@ -75,34 +75,43 @@ int main(int argc, char *argv[]) {
   // application loop
   while(strcmp(cmd, "exit\n") != 0){
     memset(cmd, '\0', sizeof(cmd));
-    printf("\n");
+    printf("\n > ");
 
     if(fgets(cmd, 255, stdin)){
 
       if(strcmp(cmd, "exit\n") == 0) printf("You closed the application!\n\n");
       else{
-        // validating the commands
-        token = strtok(cmd, " ");
-        //printf("token %s\n", token);
 
+        token = strtok(cmd, " ");
+
+        // validating the commands
         if(strcmp(token, "new") == 0){
-          int nArgs=2;
-          int i=0;
-          while (token != NULL){
+          int nArgs = 1;
+          int i = 0;
+          int isInt = 0;
+
+          // splitting the command until it's NULL, validates it, counts the
+          //number of args, checks integer
+          for ( ;token = strtok(NULL, " "); token != NULL){
+
             if(token[0] == '\n') break;
             else {
-              token = strtok(NULL, " ");
-              //printf("token %s\n", token);
               i++;
+              // whenever there is or not the number of required args, it checks
+              //whether after 'new' there is integers
+              isInt = checkInteger(token);
             }
           }
-          //printf("%d\n", i);
-          if(i > nArgs || i < nArgs) printf("The number of arguments is not the expected!\n");
-          else{
+
+          // number of arguments comparison and validating the required integer
+          if(i > nArgs || i < nArgs) printf("Did you mean something like 'new <i>'?\n");
+          else if(!isInt) printf("There is no server number!\n");
+          else {
+
             //do ring creation stuff here...
 
             printf("New ring was created!\n");
-        }
+          }
         }
         else if(strcmp(token, "entry") == 0){
           //do entry server stuff here...
