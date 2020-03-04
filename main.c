@@ -36,11 +36,13 @@ int checkInteger(char *num){
   int i=0;
   while (i < strlen(num)){
     if(num[i] < '0' || num[i] > '9') return 0;
+
     printf("Num: %c\n", num[i]);
     i++;
   }
   return 1;
 }
+
 
 
 
@@ -79,34 +81,40 @@ int main(int argc, char *argv[]) {
       if(strcmp(cmd, "exit\n") == 0) printf("You closed the application!\n\n");
       else{
         // validating the commands
-        /*token = strtok(cmd, " ");
+        token = strtok(cmd, " ");
         //printf("token %s\n", token);
 
         if(strcmp(token, "new") == 0){
-          char server;
-
-          while(token != NULL){
-            token = strtok(NULL, " ");
-            printf("token %s\n", token);
-
-            if((token != NULL && token[0] == '\n')){
-              printf("Few arguments input!\n");
-              break;
-            }
-            else if (!checkInteger(token) && token != NULL) {
-              printf("No server number inserted!\n");
-              break;
-            }
-            */
-          }
-
           //do ring creation stuff here...
 
           printf("New ring was created!\n");
         }
+        else if(strcmp(token, "entry") == 0){
+          //do entry server stuff here...
+
+          printf("New server was entered!\n");
+        }
+        else if(strcmp(token, "sentry") == 0){
+          //do stuff here...
+
+          printf("\n");
+        }
+        else if(strcmp(token, "leave") == 0){
 
 
-        else printf("No command was recognized!\n");
+          printf("\n");
+        }
+        else if(strcmp(token, "show") == 0){
+
+
+          printf("\n");
+        }
+        else if(strcmp(token, "find") == 0){
+
+
+          printf("\n");
+        }
+        else printf("Command not found!\n");
       }
     }
   }

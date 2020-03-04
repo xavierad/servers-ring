@@ -1,2 +1,2 @@
-proj: main.c
+dkt: main.c
 	gcc -o dkt main.c
