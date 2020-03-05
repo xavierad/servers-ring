@@ -8,7 +8,7 @@
 /******************************** DÚVIDAS ********************************
 
 1- comando dkt após correr o executável, certo?--> acho que não, acho que o comando deve ser ./dkt <ip> <port>, como está feito no que está comentado
-2- 0 é incluído?
+2- É preciso fazer uma verificação para o porto e IP? Se sim, é porque têm um formato próprios, certo?
 3-
 
 ****************************************************************************/
@@ -45,12 +45,13 @@ int checkInteger(char *num){
 
   while (i < strlen(num) && num[i] != '\n' && num[i] != '\0'){
 
+    // when the number is not in [0, 9]
     if(num[i] < '0' || num[i] > '9') return 0;
-    //printf("Num: %c\n", num[i]);
     i++;
   }
   return 1;
 }
+
 
 
 
@@ -75,71 +76,97 @@ int main(int argc, char *argv[]) {
   // application loop
   while(strcmp(cmd, "exit\n") != 0){
     memset(cmd, '\0', sizeof(cmd));
+
     printf("\n > ");
 
     if(fgets(cmd, 255, stdin)){
 
-      if(strcmp(cmd, "exit\n") == 0) printf("You closed the application!\n\n");
-      else{
+      token = strtok(cmd, " ");
 
-        token = strtok(cmd, " ");
+      // validating the commands
+      if(strncmp(token, "new", 3) == 0){
+        int nArgs = 1;
+        int i = 0;
+        int isInt = 0;
+        int server = 0; //mudar o tipo para char caso for necessário
 
-        // validating the commands
-        if(strcmp(token, "new") == 0){
-          int nArgs = 1;
-          int i = 0;
-          int isInt = 0;
+        // splitting the command until it's NULL, validates it, counts the
+        //number of args, checks integer
+        for ( ;token = strtok(NULL, " "); token != NULL){
 
-          // splitting the command until it's NULL, validates it, counts the
-          //number of args, checks integer
-          for ( ;token = strtok(NULL, " "); token != NULL){
-
-            if(token[0] == '\n') break;
-            else {
-              i++;
-              // whenever there is or not the number of required args, it checks
-              //whether after 'new' there is integers
-              isInt = checkInteger(token);
-            }
-          }
-
-          // number of arguments comparison and validating the required integer
-          if(i > nArgs || i < nArgs) printf("Did you mean something like 'new <i>'?\n");
-          else if(!isInt) printf("There is no server number!\n");
+          if(token[0] == '\n') break;
           else {
-
-            //do ring creation stuff here...
-
-            printf("New ring was created!\n");
+            i++;
+            // whenever there is or not the number of required args, it checks
+            //whether after 'new' there is integers
+            isInt = checkInteger(token);
+            server = atoi(token);
           }
         }
-        else if(strcmp(token, "entry") == 0){
-          //do entry server stuff here...
 
-          printf("New server was entered!\n");
+        // number of arguments comparison and validating the required integer
+        if(i > nArgs || i < nArgs) printf("Did you mean something like 'new <i>'?\n");
+        else if(!isInt) printf("There is no server number!\n");
+        else {
+          //do ring creation stuff here...
+
+          printf("New ring with server %d was created!\n", server);
         }
-        else if(strcmp(token, "sentry") == 0){
-          //do stuff here...
-
-          printf("\n");
-        }
-        else if(strcmp(token, "leave") == 0){
-
-
-          printf("\n");
-        }
-        else if(strcmp(token, "show") == 0){
-
-
-          printf("\n");
-        }
-        else if(strcmp(token, "find") == 0){
-
-
-          printf("\n");
-        }
-        else printf("Command not found!\n");
       }
+
+      else if(strncmp(token, "entry", 5) == 0){
+        //do entry server stuff here...
+
+        printf("New server was entered!\n");
+      }
+
+      else if(strncmp(token, "sentry", 5) == 0){
+        //do stuff here...
+
+        printf("\n");
+      }
+
+      else if(strcmp(token, "leave\n") == 0){
+        printf("Server left!\n");
+
+
+      }
+
+      else if(strcmp(token, "show\n") == 0){
+        printf("Showing server state ...\n");
+
+
+      }
+
+      else if(strncmp(token, "find", 4) == 0){
+        int nArgs = 1;
+        int i = 0;
+        int isInt = 0;
+        int key = 0; //mudar o tipo para char caso for necessário
+
+        for ( ;token = strtok(NULL, " "); token != NULL){
+
+          if(token[0] == '\n') break;
+          else {
+            i++;
+            isInt = checkInteger(token);
+            key = atoi(token);
+          }
+        }
+
+        if(i > nArgs || i < nArgs) printf("Did you mean something like 'find <i>'?\n");
+        else if(!isInt) printf("There is no server number!\n");
+        else {
+          //do Finding stuff here...
+
+          printf("Found the server with key %d!\n", key);
+        }
+      }
+
+      else if(strcmp(token, "exit\n") == 0) printf("You closed the application!\n\n");
+
+      else printf("Command not found!\n");
+
     }
   }
 
