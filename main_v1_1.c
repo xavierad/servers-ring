@@ -96,13 +96,14 @@ int check_IP(char* s)
        token = strtok(auxs, ".");
 
        //assuming the IP address is the form (X)(X)X.(X)(X)X.(X)(X)X.(X)(X)X
-       if(strlen(token)>3 || strcmp(s, token)==0) /*not acceptable IP format*/ return 1;
+       if(strcmp(s, token)==0) /*not acceptable IP format*/ return 1;
 
        //for(ki = 0; token[ki]!=NULL; ki++)
        int i=0;
        for(;token = strtok(NULL, "."); token != NULL)
        {
          i++;
+         if(strlen(token)>3) return 1; 
           //check if there are letters
           if(!checkInteger(token)) /*not acceptable IP format*/ return 2;
 
