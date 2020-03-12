@@ -15,6 +15,7 @@
 /******************************** A FAZER *********************************
 
 1- Acabar a verificação de comandos (interface), mensagens (pesquisa de chava, saída, entrada)
+2-
 
 ****************************************************************************/
 
@@ -37,12 +38,6 @@ struct server{
   int succ_IP;
   int succ2_IP;
 };
-
-char cmd[255] = {'\0'};
-char *token;
-
-char *ip;
-char *port;
 
 
 int checkInteger(char *num){
@@ -89,32 +84,35 @@ int checkCommands(int nArgs, char* token){
 int check_IP(char* s)
 {
     char *token;
-    int num = 0;
+    //int num = 0;
 
-    int ki;
-    int k = 0;
+    //int ki;
+    //int k = 0;
     //while(s[k]!='\0')
     //{
        //separate the IP address into octets
        char *auxs = malloc(strlen(s) * sizeof(char));
        strcpy(auxs, s);
-       token = strtok(s, ".");
-       printf("toke: %s\n", token);
-       printf("s: %s\n",s );
+       token = strtok(auxs, ".");
+
        //assuming the IP address is the form (X)(X)X.(X)(X)X.(X)(X)X.(X)(X)X
-       if(strlen(token)>3 || strcmp(auxs, token)==0) /*not acceptable IP format*/ return 1;
+       if(strlen(token)>3 || strcmp(s, token)==0) /*not acceptable IP format*/ return 1;
 
        //for(ki = 0; token[ki]!=NULL; ki++)
+       int i=0;
        for(;token = strtok(NULL, "."); token != NULL)
        {
+         i++;
           //check if there are letters
           if(!checkInteger(token)) /*not acceptable IP format*/ return 2;
 
        }
+       if(i<3) return 1;
 
   //  }
     //no errors found
     free(auxs);
+    free(token);
     return 0;
 }
 
@@ -124,14 +122,20 @@ int distanceN (int k, int l, int N){
 
 
 int main(int argc, char *argv[]) {
+  char cmd[255] = {'\0'};
+  char *token;
 
-  // validating the initiating command: dkt <ip> <port>
+  char *ip;
+  char *port;
+
+  // validating the initiating command: ./dkt <ip> <port>
   if(argc != 3) {
-    printf("\nThe command must be in format 'dkt <ip> <port>'\n\n");
+    printf("\nThe command must be in format './dkt <ip> <port>'\n\n");
     exit(0);
   }
   else {
     ip = argv[1]; port = argv[2];
+    printf("ip %s\n", ip);
 
     switch(check_IP(argv[1]))
     {
@@ -151,7 +155,7 @@ int main(int argc, char *argv[]) {
 
     printf("\n____________________________________________________________\n");
     printf("\nApplication initialized!\n");
-    printf("\n-IP addr.: %s\n-PORT: %s\n", ip, port);
+    printf("\n-IP addr.: %s\n-PORT: %s\n\n", ip, port);
   }
 
 
