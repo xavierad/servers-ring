@@ -4,7 +4,7 @@
 
 1- comando dkt após correr o executável, certo?--> acho que não, acho que o comando deve ser ./dkt <ip> <port>, como está feito no que está comentado
 2- É preciso fazer uma verificação para o porto e IP? Se sim, é porque têm um formato próprios, certo?
-3-
+3- Ao inicializar, o servidor local já pertence por defeito ao anel que consitiui somente ele?
 4-
 
 ****************************************************************************/
@@ -14,7 +14,7 @@
 
 /******************************** A FAZER *********************************
 
-1- Simplificar a verificação para o primeiro comando, talvez pôr mais geral e que dê para todas
+1- Acabar a verificação de comandos (interface), mensagens (pesquisa de chava, saída, entrada)
 
 ****************************************************************************/
 
@@ -29,6 +29,14 @@
 #include <string.h>
 #include <ctype.h>
 
+struct server{
+  int node_key;
+  int succ_key;
+  int succ2_key;
+  int node_IP;
+  int succ_IP;
+  int succ2_IP;
+};
 
 char cmd[255] = {'\0'};
 char *token;
@@ -78,37 +86,41 @@ int checkCommands(int nArgs, char* token){
   else return 1;
 }
 
-int check_IP(int i)
+int check_IP(char* s)
 {
-    char s;
-
-    //convert IP to char
-    sprintf(s, "%d", i);
-    
     char *token;
     int num = 0;
-    
+
     int ki;
-    k = 0;
-    while(s[k]!=='\0')
-    {
+    int k = 0;
+    //while(s[k]!='\0')
+    //{
        //separate the IP address into octets
+       char *auxs = malloc(strlen(s) * sizeof(char));
+       strcpy(auxs, s);
        token = strtok(s, ".");
+       printf("toke: %s\n", token);
+       printf("s: %s\n",s );
        //assuming the IP address is the form (X)(X)X.(X)(X)X.(X)(X)X.(X)(X)X
-       if(strlen(token)>3) /*not acceptable IP format*/ return 1;
-       
-       for(ki = 0; token[ki]!='\0'; ki++)
+       if(strlen(token)>3 || strcmp(auxs, token)==0) /*not acceptable IP format*/ return 1;
+
+       //for(ki = 0; token[ki]!=NULL; ki++)
+       for(;token = strtok(NULL, "."); token != NULL)
        {
           //check if there are letters
-          if(isdigit(token[ki])!=1) /*not acceptable IP format*/ return 2;
-          
-       } 
+          if(!checkInteger(token)) /*not acceptable IP format*/ return 2;
 
-    }
+       }
+
+  //  }
     //no errors found
+    free(auxs);
     return 0;
 }
 
+int distanceN (int k, int l, int N){
+  return ((l-k) % N);
+}
 
 
 int main(int argc, char *argv[]) {
@@ -121,20 +133,20 @@ int main(int argc, char *argv[]) {
   else {
     ip = argv[1]; port = argv[2];
 
-    switch(check_IP(ip))
+    switch(check_IP(argv[1]))
     {
           case 1:
             //error: IP with larger numbers then intended
-            printf("IP addresses must be in the form (X)(X)X.(X)(X)X.(X)(X)X.(X)(X)X\n");
+            printf("IP addresses must be in the form (X)(X)X.(X)(X)X.(X)(X)X.(X)(X)X\n\n");
             exit(0);
             break;
           case 2:
             //error: IP contains letters or other symbols
-            printf("IP addresses must contain only numbers\n");
-            exit(0); 
+            printf("IP addresses must contain only numbers\n\n");
+            exit(0);
             break;
-          default:
-             //OK        
+          //default:
+             //OK
     }
 
     printf("\n____________________________________________________________\n");
@@ -228,53 +240,6 @@ int main(int argc, char *argv[]) {
 
     }
   }
-
-
-
-
-  /*
-
-  // validating the comand: dkt <ip> <port>
-  while(1) {
-    fgets(cmd, 255, stdin);
-
-    token[0] = strtok(cmd, " ");
-    int i;
-    for(i=1; i<=2; i++) {
-      token[i] = strtok(NULL, " ");
-      printf("\ntoken %s\n", token[i]);
-    }
-
-
-    if(strcmp(token[0], "dkt") != 0 || token[0] == NULL || token[1][0] == '\n' || token[1] == NULL ||
-      token[2] == NULL || token[2][0] == '\n') printf("\nThe command must be in format 'dkt <ip> <port>'\n");
-    else {
-      printf("\nApplication initialized!\n");
-      // getting the ip and port parameters
-      ip = token[1]; port = token[2];
-      printf("\nIP addr.: %s\nPORT: %s\n", ip, port);
-      break;
-    }
-  }
-
-  // application loop
-  while(strcmp(cmd, "exit\n") != 0){
-    memset(cmd, '\0', sizeof(cmd));
-
-    if(fgets(cmd, 255, stdin)){
-
-      if(strcmp(cmd, "exit\n") == 0) printf("You closed the application!\n\n");
-      else{
-
-
-        // validating the commands
-        //if(strcmp())
-      }
-    }
-
-
-  }*/
-
 
   return 0;
 }
