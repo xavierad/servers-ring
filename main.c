@@ -6,7 +6,7 @@
 2- É preciso fazer uma verificação para o porto e IP? Se sim, é porque têm um formato próprios, certo?
 3- Ao inicializar, o servidor local já pertence por defeito ao anel que consitiui somente ele? Ou tem de se fazer 'new <meu servidor>'?
 4- Quando existe o anel exclusivamente constituído pelo servidor i, quando quiser que entre outro servidor, que é que eu e o outro temos de fazer?
-
+5-
 
 ****************************************************************************/
 
@@ -25,34 +25,12 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
 #include <string.h>
 #include <ctype.h>
 #include "checks.h"
-
-struct server{
-  int node_key;
-  int node_IP;
-  int succ_key;
-  int succ_IP;
-  int succ2_key;
-  int succ2_IP;
-};
+#include "server.h"
 
 
-
-/* GETTING A DISTANCE BETWEEN k AND l */
-int distanceN (int k, int l, int N){
-  return ((l-k) % N);
-}
-
-
-/* SEARCH KEY PROTOCOL */
-//void search_key()
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////  MAIN  ///////////////////////////////////////////////////

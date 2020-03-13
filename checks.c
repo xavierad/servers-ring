@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "checks.h"
 
 int checkInteger(char *num){
   int i=0;
@@ -74,10 +75,13 @@ int check_IP(char* s)
 /* CHECK INPUT port */
 int check_Port(char* p)
 {
-  //Port must not contain letters
-  if(!checkInteger(p))
-  {
+  //Port must not contain letters and must be between (2^10 + 1) and 2^16
+  if(!checkInteger(p)){
     printf("Port must not contain letters\n\n");
+    return 0;
+  }
+  else if (atoi(p)<1025 || atoi(p)>65536){
+    printf("Port must be between 1025 and 65536\n\n");
     return 0;
   }
   return 1;
