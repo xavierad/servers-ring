@@ -1,2 +1,2 @@
-dkt: main.c
-	gcc -o dkt main.c
+dkt: main.c checks.c
+	gcc -o dkt main.c checks.c

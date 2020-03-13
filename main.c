@@ -4,18 +4,21 @@
 
 1- comando dkt após correr o executável, certo?--> acho que não, acho que o comando deve ser ./dkt <ip> <port>, como está feito no que está comentado
 2- É preciso fazer uma verificação para o porto e IP? Se sim, é porque têm um formato próprios, certo?
-3- Ao inicializar, o servidor local já pertence por defeito ao anel que consitiui somente ele?
-4-
+3- Ao inicializar, o servidor local já pertence por defeito ao anel que consitiui somente ele? Ou tem de se fazer 'new <meu servidor>'?
+4- Quando existe o anel exclusivamente constituído pelo servidor i, quando quiser que entre outro servidor, que é que eu e o outro temos de fazer?
+
 
 ****************************************************************************/
 
 
 
 
-/******************************** A FAZER *********************************
+/******************************** FALTA FAZER *********************************
 
 1- Acabar a verificação de comandos (interface), mensagens (pesquisa de chava, saída, entrada)
-2-
+2- Falta check IP e port nos comandos sentry e entry
+3- Condições de erro nas chamadas de sistema (ver os restantes pontos logo antes à bibliografia)
+4-
 
 ****************************************************************************/
 
@@ -29,108 +32,28 @@
 #include <netdb.h>
 #include <string.h>
 #include <ctype.h>
+#include "checks.h"
 
 struct server{
   int node_key;
-  int succ_key;
-  int succ2_key;
   int node_IP;
+  int succ_key;
   int succ_IP;
+  int succ2_key;
   int succ2_IP;
 };
 
 
-int checkInteger(char *num){
-  int i=0;
 
-  while (i < strlen(num) && num[i] != '\n' && num[i] != '\0'){
-
-    // when the number is not in [0, 9]
-    if(num[i] < '0' || num[i] > '9') return 0;
-    i++;
-  }
-  return 1;
-}
-
-
-int checkCommands(int nArgs, char* token){
-  int i = 0;
-  int isInt = 1;
-  char *args[nArgs];
-  int server = 0; //mudar o tipo para char caso for necessário
-
-  // splitting the command until it's NULL, validates it, counts the
-  //number of args, checks integer
-  for ( ;token = strtok(NULL, " "); token != NULL){
-
-    if(token[0] == '\n') break;
-    else {
-      i++;
-
-      args[i-1] = token;
-      if(!checkInteger(args[i-1])) isInt = 0;
-      printf("%d\n", isInt);
-    }
-  }
-  // number of arguments comparison and validating the required integer
-  if(i > nArgs || i < nArgs) return 0;
-  else if(!isInt) {
-    printf("There is something wrong in server number!\n");
-    return 0;
-  }
-  else return 1;
-}
-
-int check_IP(char* s)
-{
-char *token;
-    //int num = 0;
-
-    //int ki;
-    //int k = 0;
-    //while(s[k]!='\0')
-    //{
-       //separate the IP address into octets
-       char *auxs = malloc(strlen(s) * sizeof(char));
-       strcpy(auxs, s);
-       token = strtok(auxs, ".");
-       if(strlen(token)>3) return 1;
-       //assuming the IP address is the form (X)(X)X.(X)(X)X.(X)(X)X.(X)(X)X
-       if(strcmp(s, token)==0) /*not acceptable IP format*/ return 1;
-
-       //for(ki = 0; token[ki]!=NULL; ki++)
-       int i=0;
-       for(;token = strtok(NULL, "."); token != NULL)
-       {
-         i++;
-         if(strlen(token)>3) return 1; 
-          //check if there are letters
-          if(!checkInteger(token)) /*not acceptable IP format*/ return 2;
-
-       }
-       if(i<3) return 1;
-
-  //  }
-    //no errors found
-    free(auxs);
-    free(token);
-    return 0;
-}
-
+/* GETTING A DISTANCE BETWEEN k AND l */
 int distanceN (int k, int l, int N){
   return ((l-k) % N);
 }
 
-int check_Port(char* p)
-{
-  //Port must not contain letters
-  if(!checkInteger(p))
-  {
-    printf("Port must not contain letters\n");
-    return 0;
-  }
-  return 1;
-}
+
+/* SEARCH KEY PROTOCOL */
+//void search_key()
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////  MAIN  ///////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -168,6 +91,7 @@ int main(int argc, char *argv[]) {
 
     if(check_Port(port)==0) exit(1);
 
+    // Everything is OK!
     printf("\n____________________________________________________________\n");
     printf("\nApplication initialized!\n");
     printf("\n-IP addr.: %s\n-PORT: %s\n\n", ip, port);
