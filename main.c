@@ -1,12 +1,7 @@
 
 
 /******************************** DÚVIDAS ********************************
-
-1- comando dkt após correr o executável, certo?--> acho que não, acho que o comando deve ser ./dkt <ip> <port>, como está feito no que está comentado
-2- É preciso fazer uma verificação para o porto e IP? Se sim, é porque têm um formato próprios, certo?
-3- Ao inicializar, o servidor local já pertence por defeito ao anel que consitiui somente ele? Ou tem de se fazer 'new <meu servidor>'?
-4- Quando existe o anel exclusivamente constituído pelo servidor i, quando quiser que entre outro servidor, que é que eu e o outro temos de fazer?
-5-
+1- 
 
 ****************************************************************************/
 
