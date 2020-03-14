@@ -14,7 +14,7 @@ struct _server {
   char *succ_IP;
   char *succ_TCP;
   int succ2_key;
-  int succ2_IP;
+  char *succ2_IP;
 };
 
 
