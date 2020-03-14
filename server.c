@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include "server.h"
 
-// COMO É QUE SE FAZ COM O PORTO? ALGUM TIPO DE ARRAY OU LISTA PARA GUARDAR OS PORTOS?
-
 struct _server {
 
   int node_key;
@@ -16,7 +14,10 @@ struct _server {
   char *succ_TCP;
 
   int succ2_key;
-  char* succ2_IP;
+  char *succ2_IP;
+  //acho que dá jeito para certas mensagens - a verificar
+  char *prev_IP;
+  char *prev_TCP;
 };
 
 
