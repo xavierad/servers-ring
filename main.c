@@ -109,6 +109,7 @@ int main(int argc, char *argv[]) {
       }
 
       else if(strncmp(token, "sentry", 5) == 0){
+
         if(!checkCommands(4, token)) printf("Did you mean something like 'sentry <i> <succi> <succi.IP> <succi.TCP>'?\n");
         else {
           //do entry server stuff here...
@@ -118,39 +119,26 @@ int main(int argc, char *argv[]) {
       }
 
       else if(strcmp(token, "leave\n") == 0){
+
         printf("Server left!\n");
 
 
       }
 
       else if(strcmp(token, "show\n") == 0){
+
         printf("Showing server state ...\n");
 
 
       }
 
       else if(strncmp(token, "find", 4) == 0){
-        int nArgs = 1;
-        int i = 0;
-        int isInt = 0;
-        int key = 0; //mudar o tipo para char caso for necessário
 
-        for ( ;token = strtok(NULL, " "); token != NULL){
-
-          if(token[0] == '\n') break;
-          else {
-            i++;
-            isInt = checkInteger(token);
-            key = atoi(token);
-          }
-        }
-
-        if(i > nArgs || i < nArgs) printf("Did you mean something like 'find <i>'?\n");
-        else if(!isInt) printf("There is no server number!\n");
+        if(!checkCommands(1, token)) printf("Did you mean something like 'find <i>'?\n");
         else {
-          //do Finding stuff here...
+          //do find server stuff here...
 
-          printf("Found the server with key %d!\n", key);
+          //printf("Found the server with key %d!\n", key);
         }
       }
 
@@ -160,6 +148,7 @@ int main(int argc, char *argv[]) {
 
     }
   }
+  freeServer(&serv);
   free(args);
   return 0;
 }
