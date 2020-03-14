@@ -4,13 +4,13 @@
 
 struct _server{
   int node_key;
-  // int *node_port;
-  int node_IP;
+  char *node_IP;
+  char *node_TCP;
+  char *node_UDP;
   int succ_key;
-  // int *succ_port;
-  int succ_IP;
+  char *succ_IP;
+  char *succ_TCP;
   int succ2_key;
-  // int *succ2_port;
   int succ2_IP;
 };
 
