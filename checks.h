@@ -1,8 +1,7 @@
-
-
-
 #ifndef CHECKS_H
 #define CHECKS_H
+
+extern char **args;
 
 int checkInteger(char *num);
 

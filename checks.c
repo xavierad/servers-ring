@@ -3,7 +3,10 @@
 #include <string.h>
 #include "checks.h"
 
-int checkInteger(char *num){
+char **args;
+
+int checkInteger(char *num) {
+
   int i=0;
 
   while (i < strlen(num) && num[i] != '\n' && num[i] != '\0'){
@@ -16,11 +19,11 @@ int checkInteger(char *num){
 }
 
 
-int checkCommands(int nArgs, char* token){
+int checkCommands(int nArgs, char* token) {
+
   int i = 0;
   int isInt = 1;
-  char *args[nArgs];
-  int server = 0; //mudar o tipo para char caso for necessário
+  args = (char**) malloc(nArgs * sizeof(char*));
 
   // splitting the command until it's NULL, validates it, counts the
   //number of args, checks integer
@@ -32,7 +35,6 @@ int checkCommands(int nArgs, char* token){
 
       args[i-1] = token;
       if(!checkInteger(args[i-1])) isInt = 0;
-      printf("%d\n", isInt);
     }
   }
   // number of arguments comparison and validating the required integer
@@ -45,8 +47,8 @@ int checkCommands(int nArgs, char* token){
 }
 
 /* CHECK INPUT ip */
-int check_IP(char* s)
-{
+int check_IP(char* s) {
+
     char *token;
     char *auxs = malloc(strlen(s) * sizeof(char));
 
@@ -73,8 +75,8 @@ int check_IP(char* s)
 }
 
 /* CHECK INPUT port */
-int check_Port(char* p)
-{
+int check_Port(char* p) {
+  
   //Port must not contain letters and must be between (2^10 + 1) and 2^16
   if(!checkInteger(p)){
     printf("Port must not contain letters\n\n");

@@ -1,7 +1,7 @@
 
 
 /******************************** DÚVIDAS ********************************
-1- 
+1-
 
 ****************************************************************************/
 
@@ -87,8 +87,9 @@ int main(int argc, char *argv[]) {
         if(!checkCommands(1, token)) printf("Did you mean something like 'new <i>'?\n");
         else {
           //do ring creation stuff here...
-
-          printf("A New ring has been created!\n");
+          printf("server id: %s\n", args[0]);
+          newr(atoi(args[0]), ip, port);
+          printf("A new ring has been created!\n");
         }
       }
 
