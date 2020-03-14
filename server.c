@@ -7,14 +7,14 @@
 struct _server {
 
   int node_key;
-  char* node_port;
-  char* node_IP;
+  char *node_IP;
+  char *node_TCP;
+  char *node_UDP;
   int succ_key;
-  char* succ_port;
-  char* succ_IP;
+  char *succ_IP;
+  char *succ_TCP;
   int succ2_key;
-  char* succ2_port;
-  char* succ2_IP;
+  int succ2_IP;
 };
 
 
@@ -46,7 +46,7 @@ void newr(int i, char* ip, char* port) { // assumindo que um servidor só perten
   serv->succ_key = 0;
   serv->succ_IP = NULL;
   serv->succ_port = NULL;
-  
+
   serv->succ2_key = 0;
   serv->succ2_IP = NULL;
   serv->succ2_port = NULL;
