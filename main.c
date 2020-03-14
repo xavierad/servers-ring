@@ -32,11 +32,13 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char *argv[]) {
-  char cmd[255] = {'\0'};
-  char *token;
 
-  char *ip;
-  char *port;
+  char cmd[255] = {'\0'};
+  char *token = NULL;
+
+  char *ip = NULL;
+  char *port = NULL;
+  server *serv = NULL;
 
   // validating the initiating command: ./dkt <ip> <port>
   if(argc != 3) {
@@ -87,8 +89,9 @@ int main(int argc, char *argv[]) {
         if(!checkCommands(1, token)) printf("Did you mean something like 'new <i>'?\n");
         else {
           //do ring creation stuff here...
-          printf("server id: %s\n", args[0]);
-          newr(atoi(args[0]), ip, port);
+
+          //printf("server id: %s\n", args[0]);
+          serv = newr(atoi(args[0]), ip, port);
           printf("A new ring has been created!\n");
         }
       }
@@ -157,6 +160,6 @@ int main(int argc, char *argv[]) {
 
     }
   }
-
+  free(args);
   return 0;
 }
