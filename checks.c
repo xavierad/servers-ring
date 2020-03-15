@@ -25,8 +25,8 @@ int checkInteger(char *num) {
   return 1;
 }
 
-
-int checkCommands(int nArgs, char* token) {
+int checkCommand_NEW(int nArgs, char* token )
+{
 
   int i = 0;
   int isInt = 1;
