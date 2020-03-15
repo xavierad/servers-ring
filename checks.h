@@ -7,7 +7,7 @@ extern char **args;
 
 int checkInteger(char *num);
 
-int checkCommands(int nArgs, char* token);
+int checkCommand_NEW(int nArgs, char* token);
 
 int check_IP(char* s);
 

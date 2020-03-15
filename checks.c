@@ -5,7 +5,8 @@
 
 char **args;
 
-int checkInteger(char *num) {
+int checkInteger(char *num) 
+{
 
   int i=0;
 
@@ -18,8 +19,8 @@ int checkInteger(char *num) {
   return 1;
 }
 
-
-int checkCommands(int nArgs, char* token) {
+int checkCommand_NEW(int nArgs, char* token, ) 
+{
 
   int i = 0;
   int isInt = 1;
@@ -44,7 +45,6 @@ int checkCommands(int nArgs, char* token) {
     return 0;
   }
   else return 1;
-}
 
 /* CHECK INPUT ip */
 int check_IP(char* s) {
