@@ -4,6 +4,8 @@
 
 struct _server {
 
+  int *fd;
+
   int node_key;
   char *node_IP;
   char *node_TCP;
@@ -74,7 +76,7 @@ void showState(server* serv) {
 
   if(serv == NULL) printf("The local server has no ring associated!\n");
   else {
-    printf("\n------ ABOUT THE LOCAL SERVER ------\n");
+    printf("\n\n------ ABOUT THE LOCAL SERVER ------\n");
     printf("         Key: %d\n", serv->node_key);
     printf("         IP: %s\n", serv->node_IP);
     printf("         TCP port: %s\n", serv->node_TCP);

@@ -3,16 +3,23 @@
 #include <string.h>
 #include "checks.h"
 
-char **args;
+char **args; /* auxiliary array that will contain every arguments after the first */
 
+
+/*******************************************************************************
+ * checkInteger(char *) - CHECKS IF A STRING CONTAINS A NUMBER
+ *
+ * returns: 1 if in the string there is only integers
+            0 if there is some letter
+*******************************************************************************/
 int checkInteger(char *num) {
 
   int i=0;
 
+  /* here we need also to check if there is any '\n' or '\0' for ensurement */
   while (i < strlen(num) && num[i] != '\n' && num[i] != '\0'){
 
-    // when the number is not in [0, 9]
-    if(num[i] < '0' || num[i] > '9') return 0;
+    if(num[i] < '0' || num[i] > '9') return 0; /* when the number is not in [0, 9] */
     i++;
   }
   return 1;
@@ -46,7 +53,13 @@ int checkCommands(int nArgs, char* token) {
   else return 1;
 }
 
-/* CHECK INPUT ip */
+
+/*******************************************************************************
+ * check_IP(char *) - CHECKS IF A STRING IS IN THE FORM OF IP FORMAT
+ *
+ * returns: 1 if it is in the wright format
+            2 otherwise
+*******************************************************************************/
 int check_IP(char* s) {
 
 
@@ -63,7 +76,7 @@ int check_IP(char* s) {
     {
      i++;
      if(strlen(token)>3) return 1;
-      //check if there are letters
+      /* check if there are letters */
       if(!checkInteger(token)) /*not acceptable IP format*/ return 2;
 
     }
@@ -73,10 +86,16 @@ int check_IP(char* s) {
     return 0;
 }
 
-/* CHECK INPUT port */
+/*******************************************************************************
+ * check_Port(char *) - CHECKS IF A STRING IS CONTAINS AN INTGER BETWEEN
+                          (2^10 + 1) AND 2^16
+ *
+ * returns: 1 if it is in the above interval
+            0 otherwise
+*******************************************************************************/
 int check_Port(char* p) {
 
-  //Port must not contain letters and must be between (2^10 + 1) and 2^16
+  /* Port must not contain letters and must be between (2^10 + 1) and 2^16 */
   if(!checkInteger(p)){
     printf("Port must not contain letters\n\n");
     return 0;

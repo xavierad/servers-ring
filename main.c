@@ -36,30 +36,31 @@
 
 int main(int argc, char *argv[]) {
 
-  char cmd[255] = {'\0'};
-  char *token = NULL;
+  char cmd[255] = {'\0'}; /* string that receives commands */
+  char *token = NULL; /* auxiliary string that receives cmd splitted, takes all its arguments */
 
-  char *ip = NULL;
-  char *port = NULL;
-  server *serv = NULL;
+  char *ip = NULL; /* IP address of the local server */
+  char *port = NULL; /* port to be used  */
+  server *serv = NULL; /* struct server to allocate its state */
 
-  // validating the initiating command: ./dkt <ip> <port>
+  /* validating the initiating command: ./dkt <ip> <port> */
   if(argc != 3) {
     printf("\nThe command must be in format './dkt <ip> <port>'\n\n");
     exit(0);
   }
   else {
-    ip = argv[1]; port = argv[2];
+    ip = argv[1]; port = argv[2]; /* ip and port assignement */
 
+    /* first check if IP is in the correct format, see function for details */
     switch(check_IP(argv[1]))
     {
           case 1:
-            //error: IP with larger numbers then intended
+            /* error: IP with larger numbers then intended */
             printf("IP addresses must be in the form (X)(X)X.(X)(X)X.(X)(X)X.(X)(X)X\n\n");
             exit(0);
             break;
           case 2:
-            //error: IP contains letters or other symbols
+            /* error: IP contains letters or other symbols */
             printf("IP addresses must contain only numbers\n\n");
             exit(0);
             break;
@@ -67,26 +68,27 @@ int main(int argc, char *argv[]) {
              //OK
     }
 
+    /* then, check if port is in the correct format, see function for details */
     if(check_Port(port)==0) exit(1);
 
-    // Everything is OK!
+    /* Everything is OK! */
     printf("\n____________________________________________________________\n");
     printf("\nApplication initialized!\n");
     printf("\n-IP addr.: %s\n-PORT: %s\n\n", ip, port);
   }
 
 
-  // application loop
+  /* application loop */
   while(strcmp(cmd, "exit\n") != 0){
-    memset(cmd, '\0', sizeof(cmd));
+    memset(cmd, '\0', sizeof(cmd)); /* setting all values of cmd */
 
     printf("\n > ");
 
     if(fgets(cmd, 255, stdin)){
 
-      token = strtok(cmd, " ");
+      token = strtok(cmd, " "); /* retrieve each argument of cmd, separated by a space */
 
-      // validating the commands
+      /* validating the commands */
       if(strncmp(token, "new", 3) == 0){
 
         if(!checkCommands(1, token)) printf("Did you mean something like 'new <i>'?\n");
@@ -123,9 +125,8 @@ int main(int argc, char *argv[]) {
 
       else if(strcmp(token, "leave\n") == 0){
 
+
         printf("Server left!\n");
-
-
       }
 
       else if(strcmp(token, "show\n") == 0){
@@ -151,6 +152,7 @@ int main(int argc, char *argv[]) {
 
     }
   }
+  /* exit and deallocate all memory allocated */
   freeServer(&serv);
   free(args);
   return 0;

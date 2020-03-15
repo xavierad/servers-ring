@@ -13,6 +13,7 @@
 #define max(A,B) ((A)>=(B)?(A):(B))
 
 
+// ACHO QUE DÁ PARA FAZER UMA FUNÇÃO SERVIDOR - CLIENTE, QUE RECEBE E ENVIA MSG
 void tcpC(char* ip, char* port) {
 
   int fd, newfd, errcode;
