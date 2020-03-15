@@ -19,7 +19,7 @@ int checkInteger(char *num)
   return 1;
 }
 
-int checkCommand_NEW(int nArgs, char* token, ) 
+int checkCommand_NEW(int nArgs, char* token ) 
 {
 
   int i = 0;
