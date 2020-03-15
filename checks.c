@@ -49,11 +49,11 @@ int checkCommands(int nArgs, char* token) {
 /* CHECK INPUT ip */
 int check_IP(char* s) {
 
-    char *token;
-    char *auxs = malloc(strlen(s) * sizeof(char));
+
+    char *auxs = malloc((strlen(s)+1) * sizeof(char));
 
     strcpy(auxs, s);
-    token = strtok(auxs, ".");
+    char *token = strtok(auxs, ".");
 
     //assuming the IP address is the form (X)(X)X.(X)(X)X.(X)(X)X.(X)(X)X
     if(strcmp(s, token)==0 || strlen(token)>3) /*not acceptable IP format*/ return 1;
@@ -70,13 +70,12 @@ int check_IP(char* s) {
     if(i<3) return 1;
 
     free(auxs);
-    free(token);
     return 0;
 }
 
 /* CHECK INPUT port */
 int check_Port(char* p) {
-  
+
   //Port must not contain letters and must be between (2^10 + 1) and 2^16
   if(!checkInteger(p)){
     printf("Port must not contain letters\n\n");

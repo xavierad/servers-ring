@@ -11,6 +11,8 @@ void freeServer(server** serv);
 
 server* newr(int i, char* ip, char* port);
 
+void showState(server* serv);
+
 
 
 #endif

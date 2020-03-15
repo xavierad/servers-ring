@@ -1,4 +1,7 @@
-
+/* comandos úteis:
+ - make
+ - valgrind --leak-check=yes ./dkt arg1 arg2
+*/
 
 /******************************** DÚVIDAS ********************************
 1-
@@ -128,7 +131,7 @@ int main(int argc, char *argv[]) {
       else if(strcmp(token, "show\n") == 0){
 
         printf("Showing server state ...\n");
-
+        showState(serv);
 
       }
 

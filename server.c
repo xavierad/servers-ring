@@ -31,21 +31,13 @@ int distanceN (int k, int l, int N) {
 
 void freeServer(server** serv) {
 
-  if((*serv) != NULL)
-  {
-    if((*serv)->node_IP != NULL) free((*serv)->node_IP);
-    if((*serv)->node_TCP != NULL) free((*serv)->node_TCP);
-    if((*serv)->node_UDP != NULL) free((*serv)->node_UDP);
-
-    if((*serv)->succ_IP != NULL) free((*serv)->succ_TCP);
-    if((*serv)->succ_TCP != NULL) free((*serv)->succ_TCP);
-
-    if((*serv)->succ2_IP != NULL) free((*serv)->succ2_IP);
-
+  if((*serv) != NULL) {
     free(*serv);
     *serv = NULL;
   }
 }
+
+
 /*******************************************************************************
  * CREATING A NEW RING WITH SERVER WITH KEY i
 *******************************************************************************/
@@ -73,6 +65,34 @@ server* newr(int i, char* ip, char* port) { // assumindo que um servidor só per
 
   return serv;
 }
+
+
+/*******************************************************************************
+ * SHOWING THE LOCAL SERVER STATE
+*******************************************************************************/
+void showState(server* serv) {
+
+  if(serv == NULL) printf("The local server has no ring associated!\n");
+  else {
+    printf("\n------ ABOUT THE LOCAL SERVER ------\n");
+    printf("         Key: %d\n", serv->node_key);
+    printf("         IP: %s\n", serv->node_IP);
+    printf("         TCP port: %s\n", serv->node_TCP);
+    printf("         UDP port: %s\n", serv->node_UDP);
+
+    printf("\n------ ABOUT THE SUCCESSOR SERVER ------\n");
+    printf("         Key: %d\n", serv->succ_key);
+    printf("         IP: %s\n", serv->succ_IP);
+    printf("         TCP port: %s\n", serv->succ_TCP);
+
+    printf("\n------ ABOUT THE 2nd SUCCESSOR SERVER ------\n");
+    printf("         Key: %d\n", serv->succ2_key);
+    printf("         IP: %s\n", serv->succ2_IP);
+  }
+}
+
+
+
 
 
 /*
