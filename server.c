@@ -24,13 +24,21 @@ struct _server {
 
 
 /*******************************************************************************
- * GETTING A DISTANCE BETWEEN k AND l
+ * distanceN(int , int, int ) - GETS THE DISTANCE BETWEEN k AND l
+ *
+ * returns: distance between k and l keys
 *******************************************************************************/
 int distanceN (int k, int l, int N) {
 
   return ((l-k) % N);
 }
 
+
+/*******************************************************************************
+ * freeServer(server** ) - DEALLOCATES MEMORY ALLOCATED FOR server**
+ *
+ * returns: void
+*******************************************************************************/
 void freeServer(server** serv) {
 
   if((*serv) != NULL) {
@@ -41,18 +49,22 @@ void freeServer(server** serv) {
 
 
 /*******************************************************************************
- * CREATING A NEW RING WITH SERVER WITH KEY i
+ * newr(int ,char* , char* ) - CREATES A NEW RING
+ *
+ * returns: a pointer to the local server that belongs to the new ring
 *******************************************************************************/
 server* newr(int i, char* ip, char* port) { // assumindo que um servidor só pertence a um anel.
 
   server *serv = NULL;
 
+  /* allacating memory for the local server */
   serv = (server*) malloc(sizeof(server));
   if(serv == NULL) {
     printf("Something went wrong with creating new ring!\n");
     exit(0);
   }
 
+  /* info assignement */
   serv->node_key = i;
   serv->node_IP = ip;
   serv->node_TCP = port;
@@ -70,7 +82,9 @@ server* newr(int i, char* ip, char* port) { // assumindo que um servidor só per
 
 
 /*******************************************************************************
- * SHOWING THE LOCAL SERVER STATE
+ * showState(server* ) - SHOWING THE LOCAL SERVER STATE
+ *
+ * returns: void
 *******************************************************************************/
 void showState(server* serv) {
 
