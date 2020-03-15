@@ -45,6 +45,7 @@ int checkCommand_NEW(int nArgs, char* token )
     return 0;
   }
   else return 1;
+}
 
 /* CHECK INPUT ip */
 int check_IP(char* s) {
