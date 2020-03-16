@@ -25,34 +25,54 @@ int checkInteger(char *num) {
   return 1;
 }
 
-int checkCommand_NEW(int nArgs, char* token )
+int checkCommand_NEW_FIND(int mode, char* cmd ) 
 {
+  // mode indicates if the command is new or find
+  
+  char *token = strtok(cmd, " "); //first token is the command
 
-  int i = 0;
-  int isInt = 1;
-  args = (char**) malloc(nArgs * sizeof(char*));
+  token = strtok(NULL, " "); //get the number
+  
+  if( token != NULL )
+  {
+    switch(mode)
+    {
+      case 1: //NEW
+        if(!checkInteger(token)) 
+        {
+          printf("Second argument is not an integer.\n");
+          return 0; /*error*/
+        }
+        //missing: check if the server number is already in use
+        break;
 
-  // splitting the command until it's NULL, validates it, counts the
-  //number of args, checks integer
-  for ( ;token = strtok(NULL, " "); token != NULL){
+      case 2: //FIND
+        if(!checkInteger(token)) 
+        {
+          printf("Second argument is not an integer.\n");
+          return 0; /*error*/
+        }
+        break;
 
-    if(token[0] == '\n') break;
-    else {
-      i++;
-
-      args[i-1] = token;
-      if(!checkInteger(args[i-1])) isInt = 0;
+      default:
+         printf("Can't recognize command, please try again.\n");
+         return 0; /*error*/
     }
+    return 1; /*OK*/
   }
-  // number of arguments comparison and validating the required integer
-  if(i > nArgs || i < nArgs) return 0;
-  else if(!isInt) {
-    printf("There is something wrong in server number!\n");
-    return 0;
+  else
+  {
+    printf("There is something wrong with the command line. Try <command> <integer>");
+    return 0; /*error*/
   }
-  else return 1;
+
 }
 
+//Checks the inputs for commands entry and sentry
+int checkCommand_S_ENTRY(int nArgs, char* token )
+{
+  
+}
 
 /*******************************************************************************
  * check_IP(char *) - CHECKS IF A STRING IS IN THE FORM OF IP FORMAT
