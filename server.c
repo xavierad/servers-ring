@@ -5,7 +5,7 @@
 
 struct _server {
 
-  int *fd;
+  int fd;
 
   int node_key;
   char *node_IP;
@@ -43,7 +43,6 @@ int distanceN (int k, int l, int N) {
 void freeServer(server** serv) {
 
   if((*serv) != NULL) {
-    if((*serv)->fd != NULL) free((*serv)->fd);
     free(*serv);
     *serv = NULL;
   }
@@ -120,7 +119,7 @@ void showState(server* serv) {
 void leave(server* serv) {
 
   int i;
-  for (i = 0; i < 2; i++) close(serv->fd[i]);
+  close(serv->fd);
 
 }
 
