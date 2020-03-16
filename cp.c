@@ -1,7 +1,5 @@
-// communications protocols file
-
-#include <stdio.h>
 #include <unistd.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -9,151 +7,85 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <string.h>
-#include <signal.h>
+#include "cp.h"
+#define PORT "58003"
 #define max(A,B) ((A)>=(B)?(A):(B))
 
 
-// ACHO QUE DÁ PARA FAZER UMA FUNÇÃO SERVIDOR - CLIENTE, QUE RECEBE E ENVIA MSG
-void tcpC(char* ip, char* port) {
+void tcpC() {
 
-  int fd, newfd, errcode;
-  ssize_t n;
-  socklen_t addrlen;
   struct addrinfo hints,*res;
-  struct sockaddr_in addr;
-  char buffer[128];
+  int fd,n;
+  ssize_t nbytes,nleft,nwritten,nread;
+  char *ptr,buffer[128];
+    char in[128];
 
-  struct sigaction act;
-  memset(&act,0,sizeof act);
-  act.sa_handler=SIG_IGN;
-
-  fd=socket(AF_INET,SOCK_STREAM,0); //TCP socket
-  if (fd==-1) exit(1); //error
-
+  fd=socket(AF_INET,SOCK_STREAM,0);//TCP socket
+  if(fd==-1)exit(1);//error
   memset(&hints,0,sizeof hints);
+  hints.ai_family=AF_INET;//IPv4
+  hints.ai_socktype=SOCK_STREAM;//TCP socket
 
-  hints.ai_family=AF_INET; //IPv4
-  hints.ai_socktype=SOCK_STREAM; //TCP socket
-
-  // change the IP
-  errcode=getaddrinfo("10.0.0.167",port,&hints,&res);
-
+  n=getaddrinfo("127.0.0.1",PORT,&hints,&res);
   if(n!=0)/*error*/exit(1);
+
   n=connect(fd,res->ai_addr,res->ai_addrlen);
   if(n==-1)/*error*/exit(1);
 
-  // a loop in order to keep open the tcp session
-  int i;
-  for (;;) {
-    bzero(buffer, sizeof(buffer));
-    printf("Enter the string : ");
-    i = 0;
-    while ((buffer[i++] = getchar()) != '\n');
-    n=write(fd,buffer,sizeof(buffer));
-
-    if(sigaction(SIGPIPE,&act,NULL)==-1)/*error*/exit(1);
-
-    n=read(fd,buffer,128);
-    if(n==-1)/*error*/exit(1);
-    write(1,"Echo: ",6); write(1,buffer,n);
-
-
-    if ((strncmp(buffer, "exit", 4)) == 0) {
-        printf("Client Exit...\n");
-        break;
+  while(strcmp(in, "leave \n") != 0){
+    memset(in, '\0', sizeof(in));
+    memset(buffer, '\0', sizeof(in));
+    printf("Enter a string: ");
+    if(fgets(in, 128, stdin)) {
+      n=write(fd,in,7);
+      if(n==-1)/*error*/exit(1);
+      n=read(fd,buffer,128);
+      if(n==-1)/*error*/exit(1);
+      write(1,"echo: ",6); write(1,buffer,n);
     }
   }
 
-
-  freeaddrinfo(res);
   close(fd);
+  exit(0);
 }
 
-void tcpS(char* port) {
+void tcpS() {
 
-  int fd, newfd, errcode,afd=0,maxfd,counter;
-  ssize_t n;
-  socklen_t addrlen;
   struct addrinfo hints,*res;
-  struct sockaddr_in addr;
-  char buffer[128];
-  enum {idle,busy} state;
+  int fd,newfd,errcode; ssize_t n,nw;
+  struct sockaddr_in addr; socklen_t addrlen;
+  char *ptr,buffer[128];
 
-  fd_set rfds;
-
-  fd=socket(AF_INET,SOCK_STREAM,0); //TCP socket
-  if (fd==-1) exit(1); //error
+  if((fd=socket(AF_INET,SOCK_STREAM,0))==-1)exit(1);//error
 
   memset(&hints,0,sizeof hints);
-
-  hints.ai_family=AF_INET; //IPv4
-  hints.ai_socktype=SOCK_STREAM; //TCP socket
+  hints.ai_family=AF_INET;//IPv4
+  hints.ai_socktype=SOCK_STREAM;//TCP socket
   hints.ai_flags=AI_PASSIVE;
 
-  errcode=getaddrinfo(NULL,port,&hints,&res);
-  if((errcode)!=0)/*error*/exit(1);
-
-  n=bind(fd,res->ai_addr,res->ai_addrlen);
-  if(n==-1) /*error*/ exit(1);
-
+  if((errcode=getaddrinfo(NULL,PORT,&hints,&res))!=0)/*error*/exit(1);
+  if(bind(fd,res->ai_addr,res->ai_addrlen)==-1)/*error*/exit(1);
   if(listen(fd,5)==-1)/*error*/exit(1);
 
-  /*while(1){
-    addrlen=sizeof(addr);
-    if((newfd=accept(fd,(struct sockaddr*)&addr, &addrlen))==-1) exit(1);
-
-    n=read(newfd,buffer,128);
-    if(n==-1)exit(1);
-    write(1,"Received: ",10);write(1,buffer,n);
-    n=write(newfd,buffer,n);
-    if(n==-1)exit(1);
-    close(newfd);
-  }*/
-
-  state=idle;
   while(1){
-    FD_ZERO(&rfds);
-    FD_SET(fd,&rfds); //adds tcp socket to rfds
-    maxfd=fd; //socket id, fd
-
-    if(state==busy){
-      FD_SET(afd,&rfds);
-      maxfd=max(maxfd,afd);
-    }
-
-    counter=select(maxfd+1,&rfds,(fd_set*)NULL,(fd_set*)NULL,(struct timeval *)NULL);
-    if(counter<=0)exit(1);
-
-    if(FD_ISSET(fd,&rfds)){
-      addrlen=sizeof(addr);
-
-      if((newfd=accept(fd,(struct sockaddr*)&addr,&addrlen))==-1) exit(1);
-
-      switch(state){
-        case idle:
-          afd=newfd;
-          state=busy;
-          break;
-        case busy: //write “busy\n” in newfd
-          write(newfd,"Busy\n",5);
-          close(newfd);
-          break;
+    addrlen=sizeof(addr);
+    if((newfd=accept(fd,(struct sockaddr*)&addr,&addrlen))==-1)
+    /*error*/exit(1);
+    while((n=read(newfd,buffer,128))!=0){
+      if(n==-1)/*error*/exit(1);
+      ptr=&buffer[0];
+      printf("Received: %s\n", buffer);
+      while(n>0){
+        if((nw=write(newfd,ptr,n))<=0)/*error*/exit(1);
+        n-=nw; ptr+=nw;
       }
     }
-    if(FD_ISSET(afd,&rfds)){
-      if((n=read(afd,buffer,128))!=0){
-        if(n==-1) exit(1);//error
 
-        write(1,"Received: ",10);write(1,buffer,n);
-        //write buffer in afd
-        write(afd,buffer,n);
-      }
-      else{
-        close(afd);
-        state=idle;
-      }//connection closed by peer
-    }
+    close(newfd);
+    //if(strcmp(buffer, "leave\n") == 0) break;
   }
+
+  printf("Left!\n");
   freeaddrinfo(res);
   close(fd);
 }
