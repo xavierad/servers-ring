@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "server.h"
 
 struct _server {
@@ -42,6 +43,7 @@ int distanceN (int k, int l, int N) {
 void freeServer(server** serv) {
 
   if((*serv) != NULL) {
+    if((*serv)->fd != NULL) free((*serv)->fd);
     free(*serv);
     *serv = NULL;
   }
@@ -106,6 +108,35 @@ void showState(server* serv) {
     printf("         IP: %s\n", serv->succ2_IP);
   }
 }
+
+
+/*******************************************************************************
+ * leave(server* )
+ *
+ * Description: leaves the ring, closes the TCP sessions with predecessor and
+                 sucessor
+ * returns: void
+*******************************************************************************/
+void leave(server* serv) {
+
+  int i;
+  for (i = 0; i < 2; i++) close(serv->fd[i]);
+
+}
+
+
+/*******************************************************************************
+ * succLeft(server* )
+ *
+ * Description: checks if any session is closed. If so,
+ * returns: void
+*******************************************************************************/
+
+
+
+
+
+
 
 
 
