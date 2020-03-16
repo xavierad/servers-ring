@@ -69,8 +69,64 @@ int checkCommand_NEW_FIND(int mode, char* cmd )
 }
 
 //Checks the inputs for commands entry and sentry
-int checkCommand_S_ENTRY(int nArgs, char* token )
+int checkCommand_S_ENTRY(char* cmd)
 {
+  char *token = strtok(cmd, " "); //first token is the command
+  int arg = 0;
+
+  //separate by tokens until the end of the command
+  for(;token = strtok(NULL, " "); token != NULL)
+  {  
+    if( arg >= 4)
+    {
+      printf("Command with too many arguments.\n");
+      return 0; /*error*/
+    }
+
+    if(arg<2) /* server keys*/
+    {
+      if(!checkInteger(token)) 
+      {
+        printf("At least on of the keys is not an integer.\n");
+        return 0; /*error*/
+      }
+      if(arg == 0) //CHECK IF ALREADY IN USE;
+    }
+    else if(arg == 2)
+    {
+      switch(check_IP(argv[1]))
+      {
+        case 1:
+          //error: IP with larger numbers then intended
+          printf("IP addresses must be in the form (X)(X)X.(X)(X)X.(X)(X)X.(X)(X)X\n");
+          return 0;
+          break;
+        case 2:
+          //error: IP contains letters or other symbols
+          printf("IP addresses must contain only numbers\n");
+          return 0;
+          break;
+        //default:
+        //OK
+      }
+    }
+    else
+    {
+      if(check_Port(port)==0) return 0; /*error*/
+    }
+
+    arg = arg + 1;
+
+  }
+  
+  if(arg < 4)
+  {
+    printf("Too few arguments.\n");
+    printf("Command must be in the form <command> <server_key> <server_key> <IP> <port>");
+    return 0; /*error*/
+  }
+
+  return 1; 
   
 }
 
