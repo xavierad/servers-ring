@@ -36,6 +36,7 @@
 
 int main(int argc, char *argv[]) {
 
+  int new_flag = 0; /* flag that tells if 'new' was already typped */
   char cmd[255] = {'\0'}; /* string that receives commands */
   char *token = NULL; /* auxiliary string that receives cmd splitted, takes all its arguments */
 
@@ -91,17 +92,19 @@ int main(int argc, char *argv[]) {
       /* validating the commands */
       if(strncmp(token, "new", 3) == 0){
 
-        if(!checkCommands(1, token)) printf("Did you mean something like 'new <i>'?\n");
+        if(!checkCommand_NEW(1, token)) printf("Did you mean something like 'new <i>'?\n");
         else {
           //do ring creation stuff here...
-
-          //printf("server id: %s\n", args[0]);
-          serv = newr(atoi(args[0]), ip, port);
-          printf("A new ring has been created!\n");
+          if(new_flag) printf("Cannot create a new ring!\n");
+          else {
+            new_flag = 1;
+            serv = newr(atoi(args[0]), ip, port);
+            printf("A new ring has been created!\n");
+          }
         }
       }
 
-      else if(strncmp(token, "entry", 5) == 0){
+    /*  else if(strncmp(token, "entry", 5) == 0){
 
         // number of arguments comparison and validating the required integer
         if(!checkCommands(4, token)) printf("Did you mean something like 'entry <i> <boot> <boot.IP> <boot.TCP>'?\n");
@@ -121,7 +124,7 @@ int main(int argc, char *argv[]) {
 
           printf("The new server was entered!\n");
         }
-      }
+      }*/
 
       else if(strcmp(token, "leave\n") == 0){
 
@@ -136,7 +139,7 @@ int main(int argc, char *argv[]) {
 
       }
 
-      else if(strncmp(token, "find", 4) == 0){
+    /*  else if(strncmp(token, "find", 4) == 0){
 
         if(!checkCommands(1, token)) printf("Did you mean something like 'find <i>'?\n");
         else {
@@ -145,7 +148,7 @@ int main(int argc, char *argv[]) {
           //printf("Found the server with key %d!\n", key);
         }
       }
-
+*/
       else if(strcmp(token, "exit\n") == 0) printf("You closed the application!\n\n");
 
       else printf("Command not found!\n");
