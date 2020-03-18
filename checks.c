@@ -20,7 +20,7 @@ int checkInteger(char *num) {
   /* here we need also to check if there is any '\n' or '\0' for ensurement */
   while (i < strlen(num)){
 
-    if(!isdigit(num[i]) && num[i] != '\n' && num[i] != '\0') return 0; /* when the number is not in [0, 9] */
+    if(!isdigit(num[i])) return 0; /* when the number is not in [0, 9] */
     i++;
   }
 
@@ -49,7 +49,7 @@ int checkCommand_NEW_FIND(char* token ) { // mode indicates if the command is ne
     printf("Too few arguments!\n");
     return 0;
   }
-  else if( args != NULL ) {
+  else if( args[1] != NULL ) {
 
     if(!checkInteger(args[1])) {
       printf("Second argument is not an integer.\n");
