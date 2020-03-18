@@ -11,7 +11,17 @@
 #define PORT "58003"
 #define max(A,B) ((A)>=(B)?(A):(B))
 
+/* Ideias para as comunicações
+Um nó será servidor e cliente.
 
+Portanto, do ponto de vista de servidor, estará a ouvir no seu porto, corre tcpS.
+Eventualmente terá que responder ao cliente, mas para isso é necessário saber
+que pedido é. O servidor terá que gurdar o porto com o predecessor e do sucessor
+
+Do ponto de vista de cliente, terá que saber o porto tcp etc do seu servidor, sucessor.
+Faz pedidos ao seu sucessor.
+
+*/
 void tcpC() {
 
   struct addrinfo hints,*res;
