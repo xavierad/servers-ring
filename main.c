@@ -24,7 +24,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #include "checks.h"
 #include "server.h"
 
@@ -90,24 +89,26 @@ int main(int argc, char *argv[]) {
       token = strtok(cmd, " "); /* retrieve each argument of cmd, separated by a space */
 
       /* validating the commands */
-      if(strncmp(token, "new", 3) == 0){
+      if(strcmp(token, "new") == 0){
 
-        if(!checkCommand_NEW(1, token)) printf("Did you mean something like 'new <i>'?\n");
+
+        if(!checkCommand_NEW_FIND(token)) printf("Did you mean something like 'new <i>'?\n");
         else {
+
           //do ring creation stuff here...
           if(new_flag) printf("Cannot create a new ring!\n");
           else {
             new_flag = 1;
-            serv = newr(atoi(args[0]), ip, port);
+            serv = newr(atoi(args[1]), ip, port);
             printf("A new ring has been created!\n");
           }
         }
       }
 
-    /*  else if(strncmp(token, "entry", 5) == 0){
+      else if(strncmp(token, "entry", 5) == 0){
 
         // number of arguments comparison and validating the required integer
-        if(!checkCommands(4, token)) printf("Did you mean something like 'entry <i> <boot> <boot.IP> <boot.TCP>'?\n");
+        if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'entry <i> <boot> <boot.IP> <boot.TCP>'?\n");
         else {
           //do entry server stuff here...
 
@@ -118,13 +119,13 @@ int main(int argc, char *argv[]) {
 
       else if(strncmp(token, "sentry", 5) == 0){
 
-        if(!checkCommands(4, token)) printf("Did you mean something like 'sentry <i> <succi> <succi.IP> <succi.TCP>'?\n");
+        if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'sentry <i> <succi> <succi.IP> <succi.TCP>'?\n");
         else {
           //do entry server stuff here...
 
           printf("The new server was entered!\n");
         }
-      }*/
+      }
 
       else if(strcmp(token, "leave\n") == 0){
 
@@ -139,16 +140,16 @@ int main(int argc, char *argv[]) {
 
       }
 
-    /*  else if(strncmp(token, "find", 4) == 0){
+      else if(strcmp(token, "find") == 0){
 
-        if(!checkCommands(1, token)) printf("Did you mean something like 'find <i>'?\n");
-        else {
+        if(!checkCommand_NEW_FIND(token)) printf("Did you mean something like 'find <i>'?\n");
+            else {
           //do find server stuff here...
 
-          //printf("Found the server with key %d!\n", key);
+          printf("Found the server with key %d!\n", atoi(args[1]));
         }
       }
-*/
+
       else if(strcmp(token, "exit\n") == 0) printf("You closed the application!\n\n");
 
       else printf("Command not found!\n");
