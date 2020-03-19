@@ -16,15 +16,15 @@ char **args; /* auxiliary array that will contain every arguments after the firs
 int checkInteger(char *num) {
 
   int i=0;
-
+  int numDigits = 0;
   /* here we need also to check if there is any '\n' or '\0' for ensurement */
-  while (i < strlen(num)){
+  while (i < (strlen(num)-1)){
 
-    if(!isdigit(num[i])) return 0; /* when the number is not in [0, 9] */
+    if(isdigit(num[i])) numDigits ++; /* when the number is not in [0, 9] */
     i++;
   }
-
-  return 1;
+  if(numDigits ==(strlen(num)-1)) return 1;
+  else return 0;
 }
 
 int checkCommand_NEW_FIND(char* token ) { // mode indicates if the command is new or find
