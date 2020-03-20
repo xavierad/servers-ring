@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 
   char *ip = NULL; /* IP address of the local server */
   char *port = NULL; /* port to be used  */
-  server *ring = NULL; /* struct server to allocate its state --- M: Changed serv to ring 
+  server *serv = NULL; /* struct server to allocate its state --- M: Changed serv to ring
                           since this is supposed to be the core server that supports the ring
                           if this server leaves, what happens to ring??? */
 
@@ -90,7 +90,6 @@ int main(int argc, char *argv[]) {
       /* validating the commands */
       if(strcmp(token, "new") == 0){
 
-
         if(!checkCommand_NEW_FIND(token)) printf("Did you mean something like 'new <i>'?\n");
         else {
 
@@ -98,7 +97,7 @@ int main(int argc, char *argv[]) {
           if(new_flag) printf("Cannot create a new ring!\n");
           else {
             new_flag = 1;
-            ring = newr(atoi(args[1]), ip, port);
+            serv = newr(atoi(args[1]), ip, port);
             printf("A new ring has been created!\n");
           }
         }
@@ -127,15 +126,21 @@ int main(int argc, char *argv[]) {
       }
 
       else if(strcmp(token, "leave\n") == 0){
-
-
-        printf("Server left!\n");
+        if(serv == NULL) printf("No ring created!\n");
+        else {
+          // do leave ring stuff here
+          leave(&serv);
+          freeServer(&serv);
+          printf("Server left!\n");
+        }
       }
 
       else if(strcmp(token, "show\n") == 0){
-
-        printf("Showing server state ...\n");
-        showState(ring);
+        if(serv == NULL) printf("No ring created!\n");
+        else {
+          printf("Showing server state ...\n");
+          showState(serv);
+        }
 
       }
 
@@ -156,8 +161,7 @@ int main(int argc, char *argv[]) {
     }
   }
   /* exit and deallocate all memory allocated */
-  freeServer(&ring);
+  freeServer(&serv);
   free(args);
   return 0;
 }
-
