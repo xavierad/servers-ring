@@ -23,9 +23,76 @@ int checkInteger(char *num) {
     if(isdigit(num[i])) numDigits ++; /* when the number is not in [0, 9] */
     i++;
   }
-  if(numDigits ==(strlen(num)-1)) return 1;
+  if(numDigits == (strlen(num)-1)) return 1;
   else return 0;
 }
+
+
+/*******************************************************************************
+ * check_IP(char *) - CHECKS IF A STRING IS IN THE FORM OF IP FORMAT
+ *
+ * returns: 1 if it is in the wright format
+            2 otherwise
+*******************************************************************************/
+int check_IP(char* s) {
+
+
+    char *auxs = malloc((strlen(s)+1) * sizeof(char));
+
+    strcpy(auxs, s);
+    char *token = strtok(auxs, ".");
+
+    //assuming the IP address is the form (X)(X)X.(X)(X)X.(X)(X)X.(X)(X)X
+    if(strcmp(s, token)==0 || strlen(token)>3) /*not acceptable IP format*/ {
+      free(auxs);
+      return 1;
+    }
+
+    int i=0;
+    for(;token = strtok(NULL, "."); token != NULL)
+    {
+     i++;
+     if(strlen(token)>3) {
+       free(auxs);
+       return 1;
+     }
+      /* check if there are letters */
+      if(!checkInteger(token)) /*not acceptable IP format*/ {
+        free(auxs);
+        return 2;
+      }
+    }
+    if(i<3){
+      free(auxs);
+      return 1;
+    }
+
+    if (auxs != NULL) free(auxs);
+    return 0;
+}
+
+
+/*******************************************************************************
+ * check_Port(char *) - CHECKS IF A STRING IS CONTAINS AN INTGER BETWEEN
+                          (2^10 + 1) AND 2^16
+ *
+ * returns: 1 if it is in the above interval
+            0 otherwise
+*******************************************************************************/
+int check_Port(char* p) {
+
+  /* Port must not contain letters and must be between (2^10 + 1) and 2^16 */
+  if(!checkInteger(p)){
+    printf("Port must not contain letters\n\n");
+    return 0;
+  }
+  else if (atoi(p)<1025 || atoi(p)>65536){
+    printf("Port must be between 1025 and 65536\n\n");
+    return 0;
+  }
+  return 1;
+}
+
 
 int checkCommand_NEW_FIND(char* token ) { // mode indicates if the command is new or find
 
@@ -118,57 +185,4 @@ int checkCommand_S_ENTRY(char* token) {
 
 
   return 1; /*OK*/
-}
-
-/*******************************************************************************
- * check_IP(char *) - CHECKS IF A STRING IS IN THE FORM OF IP FORMAT
- *
- * returns: 1 if it is in the wright format
-            2 otherwise
-*******************************************************************************/
-int check_IP(char* s) {
-
-
-    char *auxs = malloc((strlen(s)+1) * sizeof(char));
-
-    strcpy(auxs, s);
-    char *token = strtok(auxs, ".");
-
-    //assuming the IP address is the form (X)(X)X.(X)(X)X.(X)(X)X.(X)(X)X
-    if(strcmp(s, token)==0 || strlen(token)>3) /*not acceptable IP format*/ return 1;
-
-    int i=0;
-    for(;token = strtok(NULL, "."); token != NULL)
-    {
-     i++;
-     if(strlen(token)>3) return 1;
-      /* check if there are letters */
-      if(!checkInteger(token)) /*not acceptable IP format*/ return 2;
-
-    }
-    if(i<3) return 1;
-
-    free(auxs);
-    return 0;
-}
-
-/*******************************************************************************
- * check_Port(char *) - CHECKS IF A STRING IS CONTAINS AN INTGER BETWEEN
-                          (2^10 + 1) AND 2^16
- *
- * returns: 1 if it is in the above interval
-            0 otherwise
-*******************************************************************************/
-int check_Port(char* p) {
-
-  /* Port must not contain letters and must be between (2^10 + 1) and 2^16 */
-  if(!checkInteger(p)){
-    printf("Port must not contain letters\n\n");
-    return 0;
-  }
-  else if (atoi(p)<1025 || atoi(p)>65536){
-    printf("Port must be between 1025 and 65536\n\n");
-    return 0;
-  }
-  return 1;
 }
