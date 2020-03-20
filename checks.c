@@ -35,7 +35,6 @@ int checkCommand_NEW_FIND(char* token ) { // mode indicates if the command is ne
   int i = 1;
   for ( ;token = strtok(NULL, " "); token != NULL){
     args[i] = token;
-    printf("token %s\n", token);
 
     i++;
     if(i > 2) {
