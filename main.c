@@ -5,19 +5,16 @@
 
 /******************************** DÚVIDAS ********************************
 1-
-
 ****************************************************************************/
 
 
 
 
 /******************************** FALTA FAZER *********************************
-
 1- Acabar a verificação de comandos (interface), mensagens (pesquisa de chava, saída, entrada)
 2- Falta check IP e port nos comandos sentry e entry
 3- Condições de erro nas chamadas de sistema (ver os restantes pontos logo antes à bibliografia)
 4-
-
 ****************************************************************************/
 
 #include <stdio.h>
@@ -33,8 +30,7 @@
 ///////////////////////////////////////////////  MAIN  ///////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int main(int argc, char *argv[]) 
-{
+int main(int argc, char *argv[]) {
 
   int new_flag = 0; /* flag that tells if 'new' was already typped */
   char cmd[255] = {'\0'}; /* string that receives commands */
@@ -42,16 +38,16 @@ int main(int argc, char *argv[])
 
   char *ip = NULL; /* IP address of the local server */
   char *port = NULL; /* port to be used  */
-  server *serv = NULL; /* struct server to allocate its state */
+  server *ring = NULL; /* struct server to allocate its state --- M: Changed serv to ring 
+                          since this is supposed to be the core server that supports the ring
+                          if this server leaves, what happens to ring??? */
 
   /* validating the initiating command: ./dkt <ip> <port> */
-  if(argc != 3) 
-  {
+  if(argc != 3) {
     printf("\nThe command must be in format './dkt <ip> <port>'\n\n");
     exit(0);
   }
-  else 
-  {
+  else {
     ip = argv[1]; port = argv[2]; /* ip and port assignement */
 
     /* first check if IP is in the correct format, see function for details */
@@ -82,44 +78,37 @@ int main(int argc, char *argv[])
 
 
   /* application loop */
-  while(strcmp(cmd, "exit\n") != 0)
-  {
+  while(strcmp(cmd, "exit\n") != 0){
     memset(cmd, '\0', sizeof(cmd)); /* setting all values of cmd */
 
     printf("\n > ");
 
-    if(fgets(cmd, 255, stdin))
-    {
+    if(fgets(cmd, 255, stdin)){
 
       token = strtok(cmd, " "); /* retrieve each argument of cmd, separated by a space */
 
       /* validating the commands */
-      if(strcmp(token, "new") == 0)
-      {
+      if(strcmp(token, "new") == 0){
 
 
         if(!checkCommand_NEW_FIND(token)) printf("Did you mean something like 'new <i>'?\n");
-        else 
-        {
+        else {
 
           //do ring creation stuff here...
           if(new_flag) printf("Cannot create a new ring!\n");
-          else 
-          {
+          else {
             new_flag = 1;
-            serv = newr(atoi(args[1]), ip, port);
+            ring = newr(atoi(args[1]), ip, port);
             printf("A new ring has been created!\n");
           }
         }
       }
 
-      else if(strncmp(token, "entry", 5) == 0)
-      {
+      else if(strncmp(token, "entry", 5) == 0){
 
         // number of arguments comparison and validating the required integer
         if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'entry <i> <boot> <boot.IP> <boot.TCP>'?\n");
-        else 
-        {
+        else {
           //do entry server stuff here...
 
           printf("The new server was entered!\n");
@@ -127,39 +116,33 @@ int main(int argc, char *argv[])
 
       }
 
-      else if(strncmp(token, "sentry", 5) == 0)
-      {
+      else if(strncmp(token, "sentry", 5) == 0){
 
         if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'sentry <i> <succi> <succi.IP> <succi.TCP>'?\n");
-        else 
-        {
+        else {
           //do entry server stuff here...
 
           printf("The new server was entered!\n");
         }
       }
 
-      else if(strcmp(token, "leave\n") == 0)
-      {
+      else if(strcmp(token, "leave\n") == 0){
 
 
         printf("Server left!\n");
       }
 
-      else if(strcmp(token, "show\n") == 0)
-      {
+      else if(strcmp(token, "show\n") == 0){
 
         printf("Showing server state ...\n");
-        showState(serv);
+        showState(ring);
 
       }
 
-      else if(strcmp(token, "find") == 0)
-      {
+      else if(strcmp(token, "find") == 0){
 
         if(!checkCommand_NEW_FIND(token)) printf("Did you mean something like 'find <i>'?\n");
-            else 
-            {
+            else {
           //do find server stuff here...
 
           printf("Found the server with key %d!\n", atoi(args[1]));
@@ -173,7 +156,8 @@ int main(int argc, char *argv[])
     }
   }
   /* exit and deallocate all memory allocated */
-  freeServer(&serv);
+  freeServer(&ring);
   free(args);
   return 0;
 }
+
