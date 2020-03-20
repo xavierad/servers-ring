@@ -5,19 +5,16 @@
 
 /******************************** DÚVIDAS ********************************
 1-
-
 ****************************************************************************/
 
 
 
 
 /******************************** FALTA FAZER *********************************
-
 1- Acabar a verificação de comandos (interface), mensagens (pesquisa de chava, saída, entrada)
 2- Falta check IP e port nos comandos sentry e entry
 3- Condições de erro nas chamadas de sistema (ver os restantes pontos logo antes à bibliografia)
 4-
-
 ****************************************************************************/
 
 #include <stdio.h>
@@ -41,7 +38,9 @@ int main(int argc, char *argv[]) {
 
   char *ip = NULL; /* IP address of the local server */
   char *port = NULL; /* port to be used  */
-  server *serv = NULL; /* struct server to allocate its state */
+  server *ring = NULL; /* struct server to allocate its state --- M: Changed serv to ring 
+                          since this is supposed to be the core server that supports the ring
+                          if this server leaves, what happens to ring??? */
 
   /* validating the initiating command: ./dkt <ip> <port> */
   if(argc != 3) {
@@ -99,7 +98,7 @@ int main(int argc, char *argv[]) {
           if(new_flag) printf("Cannot create a new ring!\n");
           else {
             new_flag = 1;
-            serv = newr(atoi(args[1]), ip, port);
+            ring = newr(atoi(args[1]), ip, port);
             printf("A new ring has been created!\n");
           }
         }
@@ -136,7 +135,7 @@ int main(int argc, char *argv[]) {
       else if(strcmp(token, "show\n") == 0){
 
         printf("Showing server state ...\n");
-        showState(serv);
+        showState(ring);
 
       }
 
@@ -157,7 +156,8 @@ int main(int argc, char *argv[]) {
     }
   }
   /* exit and deallocate all memory allocated */
-  freeServer(&serv);
+  freeServer(&ring);
   free(args);
   return 0;
 }
+

@@ -42,11 +42,13 @@ void tcpC() {
   n=connect(fd,res->ai_addr,res->ai_addrlen);
   if(n==-1)/*error*/exit(1);
 
-  while(strcmp(in, "leave \n") != 0){
+  while(strcmp(in, "leave \n") != 0)
+  {
     memset(in, '\0', sizeof(in));
     memset(buffer, '\0', sizeof(in));
     printf("Enter a string: ");
-    if(fgets(in, 128, stdin)) {
+    if(fgets(in, 128, stdin)) 
+    {
       n=write(fd,in,7);
       if(n==-1)/*error*/exit(1);
       n=read(fd,buffer,128);
@@ -59,7 +61,8 @@ void tcpC() {
   exit(0);
 }
 
-void tcpS() {
+void tcpS() 
+{
 
   struct addrinfo hints,*res;
   int fd,newfd,errcode; ssize_t n,nw;
@@ -77,11 +80,13 @@ void tcpS() {
   if(bind(fd,res->ai_addr,res->ai_addrlen)==-1)/*error*/exit(1);
   if(listen(fd,5)==-1)/*error*/exit(1);
 
-  while(1){
+  while(1)
+  {
     addrlen=sizeof(addr);
     if((newfd=accept(fd,(struct sockaddr*)&addr,&addrlen))==-1)
     /*error*/exit(1);
-    while((n=read(newfd,buffer,128))!=0){
+    while((n=read(newfd,buffer,128))!=0)
+    {
       if(n==-1)/*error*/exit(1);
       ptr=&buffer[0];
       printf("Received: %s\n", buffer);
