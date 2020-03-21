@@ -3,10 +3,10 @@
 #include <unistd.h>
 #include "server.h"
 
-struct _server 
+struct _server
 {
 
-  int fd;
+  int *fd;
 
   int node_key;
   char *node_IP;
@@ -30,7 +30,7 @@ struct _server
  *
  * returns: distance between k and l keys
 *******************************************************************************/
-int distanceN (int k, int l, int N) 
+int distanceN (int k, int l, int N)
 {
 
   return ((l-k) % N);
@@ -42,10 +42,10 @@ int distanceN (int k, int l, int N)
  *
  * returns: void
 *******************************************************************************/
-void freeServer(server** serv) 
+void freeServer(server** serv)
 {
 
-  if((*serv) != NULL) 
+  if((*serv) != NULL)
   {
     free(*serv);
     *serv = NULL;
@@ -58,14 +58,14 @@ void freeServer(server** serv)
  *
  * returns: a pointer to the local server that belongs to the new ring
 *******************************************************************************/
-server* newr(int i, char* ip, char* port) 
+server* newr(int i, char* ip, char* port)
 { // assumindo que um servidor só pertence a um anel.
 
   server *serv = NULL;
 
   /* allacating memory for the local server */
   serv = (server*) malloc(sizeof(server));
-  if(serv == NULL) 
+  if(serv == NULL)
   {
     printf("Something went wrong with creating new ring!\n");
     exit(0);
@@ -93,11 +93,11 @@ server* newr(int i, char* ip, char* port)
  *
  * returns: void
 *******************************************************************************/
-void showState(server* serv) 
+void showState(server* serv)
 {
 
   if(serv == NULL) printf("The local server has no ring associated!\n");
-  else 
+  else
   {
     printf("\n\n------ ABOUT THE LOCAL SERVER ------\n");
     printf("         Key: %d\n", serv->node_key);
@@ -124,12 +124,13 @@ void showState(server* serv)
                  sucessor
  * returns: void
 *******************************************************************************/
-void leave(server* serv) 
+void leave(server** serv)
 {
 
   int i;
-  close(serv->fd);
+  int length = sizeof((*serv)->fd) / sizeof(int);
 
+  for(i = 0; i < length; i++) close((*serv)->fd[i]);
 }
 
 

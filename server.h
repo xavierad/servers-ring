@@ -13,7 +13,7 @@ server* newr(int i, char* ip, char* port);
 
 void showState(server* serv);
 
-void leave(server* serv);
+void leave(server** serv);
 
 
 
