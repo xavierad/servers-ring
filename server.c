@@ -1,13 +1,24 @@
-#include <stdlib.h>
-#include <stdio.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <string.h>
+
+#define PORT "58003"
+#define max(A,B) ((A)>=(B)?(A):(B))
+
 #include "server.h"
 
 struct _server
 {
-
+  /* client sockets array */
   int *fd;
 
+  /* server state */
   int node_key;
   char *node_IP;
   char *node_TCP;
@@ -47,6 +58,7 @@ void freeServer(server** serv)
 
   if((*serv) != NULL)
   {
+    if((*serv)->fd != NULL) free((*serv)->fd);
     free(*serv);
     *serv = NULL;
   }
@@ -59,7 +71,7 @@ void freeServer(server** serv)
  * returns: a pointer to the local server that belongs to the new ring
 *******************************************************************************/
 server* newr(int i, char* ip, char* port)
-{ // assumindo que um servidor só pertence a um anel.
+{
 
   server *serv = NULL;
 
@@ -155,3 +167,186 @@ void leave(server** serv)
 void search_key(int key){
 
 }*/
+
+
+
+/* Ideias para as comunicações
+Um nó será servidor e cliente.
+
+Portanto, do ponto de vista de servidor, estará a ouvir no seu porto, corre tcpS.
+Eventualmente terá que responder ao cliente, mas para isso é necessário saber
+que pedido é. O servidor terá que gurdar o porto com o predecessor e do sucessor
+
+Do ponto de vista de cliente, terá que saber o porto tcp etc do seu servidor, sucessor.
+Faz pedidos ao seu sucessor.
+
+*/
+void tcpC() {
+
+  struct addrinfo hints,*res;
+  ssize_t nbytes,nleft,nwritten,nread;
+
+  int fd,n;
+  char *ptr;
+  char in[128], buffer[128];
+
+  fd=socket(AF_INET,SOCK_STREAM,0);//TCP socket
+  if(fd==-1)exit(1);//error
+  memset(&hints,0,sizeof hints);
+  hints.ai_family=AF_INET;//IPv4
+  hints.ai_socktype=SOCK_STREAM;//TCP socket
+
+  // MUDAR IP E PORTO
+  n=getaddrinfo("127.0.0.1",PORT,&hints,&res);
+  if(n!=0)/*error*/exit(1);
+
+  n=connect(fd,res->ai_addr,res->ai_addrlen);
+  if(n==-1)/*error*/exit(1);
+
+  while(1){
+    printf("Enter a string: ");
+    if(fgets(in, 128, stdin)) {
+
+      n=write(fd,in,strlen(in));
+      if(n==-1)/*error*/{
+        printf("Error occurred!\n");
+        exit(1);
+      }
+
+      n=read(fd,buffer,128);
+      if(n==-1)/*error*/{
+        printf("Error occurred!\n");
+        exit(1);
+      }
+
+      // APAGAR ECHO
+      write(1,"echo: ",6); write(1,buffer,n);
+
+      /* Clean arrays */
+      in[128] = '\0';
+      buffer[128] = '\0';
+    }
+  }
+
+
+}
+
+void tcpS(server** serv) {
+
+  struct addrinfo hints,*res;
+  struct sockaddr_in addr; socklen_t addrlen;
+  ssize_t n, nw;
+
+  int fd, newfd, afd=0, errcode, maxfd, counter, /*client_socket[30] = {0},*/ max_clients = 2;
+  char *ptr, buffer[128];
+
+
+  (*serv)->fd = (int*) malloc(max_clients * sizeof(int));
+
+  fd_set rfds;
+
+  if((fd=socket(AF_INET,SOCK_STREAM,0)) == -1){
+    printf("An error occurred on socket() function!\n");
+    exit(1);
+  }
+
+  memset(&hints, 0, sizeof hints);
+  hints.ai_family=AF_INET;//IPv4
+  hints.ai_socktype=SOCK_STREAM;//TCP socket
+  hints.ai_flags=AI_PASSIVE;
+
+  // CHANGE PORT
+  if((errcode = getaddrinfo(NULL, PORT, &hints, &res))!=0){
+    printf("An error occurred on getting addresses!\n");
+    exit(1);
+  }
+  if(bind(fd, res->ai_addr, res->ai_addrlen) == -1)
+  {
+    printf("An error occurred on binding!\n");
+    exit(1);
+  }
+  if(listen(fd, 5) == -1){
+    printf("An error occurred on listening!\n");
+    exit(1);
+  }
+
+
+  while(1){
+    FD_ZERO(&rfds);
+    FD_SET(fd, &rfds); //adds tcp socket to rfds
+
+    maxfd = fd; //socket id, fd
+
+    //add child sockets to set
+    int i;
+    for (i = 0; i < max_clients; i++) {
+      //socket descriptor
+      afd =(*serv)->fd[i];
+
+      //if valid socket descriptor then add to read list
+      if(afd > 0) FD_SET(afd, &rfds);
+
+      //highest file descriptor number, need it for the select function
+      if(afd > maxfd) maxfd = afd;
+    }
+
+    counter=select(maxfd+1, &rfds, (fd_set*)NULL, (fd_set*)NULL, (struct timeval *)NULL);
+    if(counter <= 0) {
+      printf("An error occurred on select() function!\n");
+      exit(1);
+    }
+
+
+
+    if(FD_ISSET(fd, &rfds)){
+
+      addrlen = sizeof(addr);
+
+      if((newfd = accept(fd, (struct sockaddr*)&addr, &addrlen)) == -1) {
+        printf("An error occurred on accept() function!\n");
+        exit(1);
+      }
+      printf("New connection %s:%d with fd: %d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), newfd);
+
+      //add new socket to array of sockets
+      for (i = 0; i < max_clients; i++) {
+          //if position is empty
+          if((*serv)->fd[i] == 0 ) {
+              (*serv)->fd[i] = newfd;
+              printf("Adding to list of sockets %d\n\n" , newfd);
+              break;
+          }
+      }
+    }
+
+    for(i = 0; i < max_clients; i++) {
+
+      afd = (*serv)->fd[i];
+      if(FD_ISSET(afd, &rfds)){
+        if((n = read(afd, buffer, 128))!=0){
+          if(n == -1) {
+            printf("An error occurred on read() function!\n");
+            exit(1);
+          }
+          printf("from %s:%d   fd: %d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), afd);
+          write(1,"Received: ",10); write(1, buffer, n);
+          printf("\n");
+          //write buffer in afd
+          write(afd, buffer, n);
+        }
+        else if(strcmp(buffer, "exit\n")){
+          printf("Closed!\n");
+          close(afd);
+          (*serv)->fd[i] = 0;
+        }//connection closed by peer
+        // clearing buffer
+        buffer[n] = '\0';
+      }
+    }
+
+  }
+
+  printf("Closing!\n");
+  freeaddrinfo(res);
+  close(fd);
+}
