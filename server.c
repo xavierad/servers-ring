@@ -14,13 +14,14 @@
 
 struct _server
 {
-  /* client sockets array */
-  int *fd;
+  /* client sockets array ----- M: I think it is obsolete -> see end of struct */
+  /*int *fd ;*/
 
   /* server state */
   int node_key;
   char *node_IP;
-  char *node_TCP;
+  char *node_TCPs;
+  char *node_TCPc;
   char *node_UDP;
 
   int succ_key;
@@ -32,14 +33,22 @@ struct _server
   //acho que dá jeito para certas mensagens - a verificar
   char *prev_IP;
   char *prev_TCP;
+
+  //To discuss:
+  int fd_tcpS;
+  int fd_tcpC;
+  int fd_tcpC1;
+  int fd_tcpC2;
+  int fd_udpS;
+  int fd_udpC;
 };
 
 /*******************************************************************************
  * create_serv() - CREATES A SERVER THAT WILL ENTER THE RING
  *
- * returns: distance between k and l keys
+ * returns: server
 *******************************************************************************/
-create_serv()
+server* create_serv()
 {
   server *serv = NULL;
 
@@ -55,7 +64,7 @@ create_serv()
   serv->node_key = args[1];
   serv->node_IP = args[3]; /*-----> what to put ????
                             coloquei i para o caso em que não se comunica com outras máquinas */
-  serv->node_TCP = NULL;  //-----> what to put ????*/
+  serv-> = NULL;  //-----> what to put ????*/
   serv->node_UDP = NULL;
 
   serv->succ_key = args[2];
@@ -68,6 +77,7 @@ create_serv()
   serv->prev_IP = NULL;
   serv->prev_TCP = NULL;
 
+  //fds are not supposed to be initialized. right?
   return serv;
 }
 
@@ -80,7 +90,6 @@ create_serv()
 *******************************************************************************/
 int distanceN (int k, int l, int N)
 {
-
   return ((l-k) % N);
 }
 
@@ -123,7 +132,8 @@ server* newr(int i, char* ip, char* port)
   /* info assignement */
   serv->node_key = i;
   serv->node_IP = ip;
-  serv->node_TCP = port;
+  serv->node_TCPs = port;
+  serv->node_TCPc = NULL;
   serv->node_UDP = NULL;
 
   serv->succ_key = i;
@@ -154,7 +164,8 @@ void showState(server* serv)
     printf("\n\n------ ABOUT THE LOCAL SERVER ------\n");
     printf("         Key: %d\n", serv->node_key);
     printf("         IP: %s\n", serv->node_IP);
-    printf("         TCP port: %s\n", serv->node_TCP);
+    printf("         TCP server port: %s\n", serv->node_TCPs);
+    //printf("         TCP client port: %s\n", serv->node_TCPc);
     printf("         UDP port: %s\n", serv->node_UDP);
 
     printf("\n------ ABOUT THE SUCCESSOR SERVER ------\n");
@@ -217,6 +228,8 @@ que pedido é. O servidor terá que gurdar o porto com o predecessor e do sucess
 Do ponto de vista de cliente, terá que saber o porto tcp etc do seu servidor, sucessor.
 Faz pedidos ao seu sucessor.
 */
+
+///////////////////////// delete later//////////////////////////////////////////////////////////
 void tcpC(char* ip, char* port) {
 
   struct addrinfo hints, *res;
@@ -273,15 +286,87 @@ void tcpC(char* ip, char* port) {
 
 }
 
+
+
+
+
+
+/*******************************************************************************
+ * create_tcp_server(char *port) - "opens" a tcp server
+ *                                       -> waiting from connect from client
+ *
+ * returns: fd of the created socket
+*******************************************************************************/
+int create_tcp_server(server *serv)
+{
+	int fd, errcode;
+	struct addrinfo hints, *res;
+  ssize_t n;
+
+    fd = socket(AF_INET,SOCK_STREAM,0);
+    if (fd==-1) return -1; //error
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    errcode = getaddrinfo( NULL, serv->node_TCPs, &hints, &res);
+    if((errcode) != 0) return -1; //error
+
+    n = bind(fd, res->ai_addrlen);
+    if(n==-1) return -1; //error
+
+    if(listen(fd,5)==-1) return -1; //error
+
+    serv->fd_tcpS = fd;
+
+    return fd;
+
+}
+
+
+/*******************************************************************************
+ * create_tcp_client(server *serv) - creates  a tcp client
+ *
+ * returns: fd of the created socket
+*******************************************************************************/
+int create_tcp_client(server *serv)
+{
+	int fd, errcode;
+	struct addrinfo hints, *res;
+  ssize_t n;
+
+    fd = socket(AF_INET,SOCK_STREAM,0);
+    if (fd==-1) return -1; //error
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    errcode = getaddrinfo( serv->succ_IP, serv->succ_TCP, &hints, &res);
+    if((errcode) != 0) return -1; //error
+
+    serv->fd_tcpC = fd;
+    return fd;
+
+}
+
+
+
+
+
+
+///////////////////////// delete later//////////////////////////////////////////////////////////
 void tcpS(char* port, server** serv) {
 
   struct addrinfo hints,*res;
   struct sockaddr_in addr; socklen_t addrlen;
-  ssize_t n, nw;
+
 
   int fd, newfd, afd=0, errcode, maxfd, counter, /*client_socket[30] = {0},*/ max_clients = 2;
   char *ptr, buffer[128];
-
+  ssize_t n, nw;
 
   (*serv)->fd = (int*) malloc(max_clients * sizeof(int));
 
@@ -310,7 +395,6 @@ void tcpS(char* port, server** serv) {
     printf("An error occurred on listening!\n");
     exit(1);
   }
-
 
   while(1){
 

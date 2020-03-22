@@ -22,6 +22,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h> // for fd_set
+
 #include "checks.h"
 #include "server.h"
 
@@ -39,9 +41,11 @@ int main(int argc, char *argv[]) {
 
   char *ip = NULL; /* IP address of the local server */
   char *port = NULL; /* port to be used  */
-  server *serv = NULL; /* struct server to allocate its state --- M: Changed serv to ring
-                          since this is supposed to be the core server that supports the ring
-                          if this server leaves, what happens to ring??? */
+  server *serv = NULL; // struct server to allocate its state
+
+  fd_set rfds;  //moved from tcpS
+  server *newsrv = NULL;
+  int nfd; // new fd (aux)
 
   /* validating the initiating command: ./dkt <ip> <port> */
   if(argc != 3) {
@@ -124,14 +128,43 @@ int main(int argc, char *argv[]) {
 
         if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'sentry <i> <succi> <succi.IP> <succi.TCP>'?\n");
         else {
+
           //do entry server stuff here...
           //sentry i succi s.IP s.TCP
 
-          //allocate mem to a server that enters the ring
-          create_serv()
+          //allocate mem to a server that enters the ring and fill it info
+          newsrv = create_serv();
+
+          //create a tcp server up until listening
+          nfd = create_tcp_server(newsrv);
+          if(nfd == -1)
+          {
+            printf("An error occured when creating a tcp server \n");
+
+          }
+          else
+          {
+            //save the fd on the fd table
+            FD_SET(nfd, rfds);
+
+            nfd = create_tcp_client(newsrv);
+            if(nfd == -1)
+            {
+              printf("An error occured when creating a tcp client \n");
+
+            }
+            else
+            {
+              FD_SET(nfd, rfds);
+
+              //now we must start communication between servers
+            }
 
 
-          printf("The new server was entered!\n");
+
+            printf("The new server was entered!\n");
+          }
+
         }
         free(args);
       }
