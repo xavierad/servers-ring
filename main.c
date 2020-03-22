@@ -1,3 +1,4 @@
+
 /* comandos úteis:
  - make
  - valgrind --leak-check=yes ./dkt arg1 arg2
@@ -125,7 +126,9 @@ int main(int argc, char *argv[]) {
         else {
           //do entry server stuff here...
           //sentry i succi s.IP s.TCP
-          
+
+          //allocate mem to a server that enters the ring
+          create_serv()
 
 
           printf("The new server was entered!\n");

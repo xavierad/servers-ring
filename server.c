@@ -34,6 +34,44 @@ struct _server
   char *prev_TCP;
 };
 
+/*******************************************************************************
+ * create_serv() - CREATES A SERVER THAT WILL ENTER THE RING
+ *
+ * returns: distance between k and l keys
+*******************************************************************************/
+create_serv()
+{
+  server *serv = NULL;
+
+  /* allacating memory for the local server */
+  serv = (server*) malloc(sizeof(server));
+  if(serv == NULL)
+  {
+    printf("Something went wrong with creating new server!\n");
+    exit(0);
+  }
+
+  /* info assignement */
+  serv->node_key = args[1];
+  serv->node_IP = args[3]; /*-----> what to put ????
+                            coloquei i para o caso em que não se comunica com outras máquinas */
+  serv->node_TCP = NULL;  //-----> what to put ????*/
+  serv->node_UDP = NULL;
+
+  serv->succ_key = args[2];
+  serv->succ_IP = args[3];
+  serv->succ_TCP = args[4];
+
+  serv->succ2_key = -1;
+  serv->succ2_IP = NULL;
+
+  serv->prev_IP = NULL;
+  serv->prev_TCP = NULL;
+
+  return serv;
+}
+
+
 
 /*******************************************************************************
  * distanceN(int , int, int ) - GETS THE DISTANCE BETWEEN k AND l
@@ -88,11 +126,11 @@ server* newr(int i, char* ip, char* port)
   serv->node_TCP = port;
   serv->node_UDP = NULL;
 
-  serv->succ_key = 0;
+  serv->succ_key = i;
   serv->succ_IP = NULL;
   serv->succ_TCP = NULL;
 
-  serv->succ2_key = 0;
+  serv->succ2_key = i;
   serv->succ2_IP = NULL;
 
   serv->prev_IP = NULL;
@@ -167,21 +205,17 @@ void leave(server** serv)
 
 /*
 void search_key(int key){
-
 }*/
 
 
 
 /* Ideias para as comunicações
 Um nó será servidor e cliente.
-
 Portanto, do ponto de vista de servidor, estará a ouvir no seu porto, corre tcpS.
 Eventualmente terá que responder ao cliente, mas para isso é necessário saber
 que pedido é. O servidor terá que gurdar o porto com o predecessor e do sucessor (será que do pred sim?)
-
 Do ponto de vista de cliente, terá que saber o porto tcp etc do seu servidor, sucessor.
 Faz pedidos ao seu sucessor.
-
 */
 void tcpC(char* ip, char* port) {
 
