@@ -95,6 +95,9 @@ server* newr(int i, char* ip, char* port)
   serv->succ2_key = 0;
   serv->succ2_IP = NULL;
 
+  serv->prev_IP = NULL;
+  serv->prev_TCP = NULL;
+
   return serv;
 }
 
@@ -200,7 +203,7 @@ void tcpC(char* ip, char* port) {
   hints.ai_socktype=SOCK_STREAM;//TCP socket
 
   /* Get here server's ip and port (either successor's or predecessor's) */
-  
+
 
   if(getaddrinfo(ip, port, &hints, &res) != 0){
     printf("An error occurred on getting addresses!\n");
@@ -313,6 +316,9 @@ void tcpS(char* port, server** serv) {
       }
       printf("New connection %s:%d with fd: %d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), newfd);
 
+      /* Save client port here either succesor's either predecessor's */
+
+
       //add new socket to array of sockets
       for (i = 0; i < max_clients; i++) {
           //if position is empty
@@ -338,9 +344,6 @@ void tcpS(char* port, server** serv) {
           printf("from %s:%d   fd: %d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), afd);
           write(1,"Received: ",10); write(1, buffer, n);
           printf("\n");
-
-          /* Save client port here either succesor's either predecessor's */
-
 
           /* Interpretate message here and answer to client if needed*/
 

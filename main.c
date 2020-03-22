@@ -32,7 +32,7 @@
 
 int main(int argc, char *argv[]) {
 
-  int new_flag = 0; /* flag that tells if 'new' was already typped */
+  int servnum = 0; /* counters the number of servers in the ring */
   char cmd[255] = {'\0'}; /* string that receives commands */
   char *token = NULL; /* auxiliary string that receives cmd splitted, takes all its arguments */
 
@@ -94,13 +94,15 @@ int main(int argc, char *argv[]) {
         else {
 
           //do ring creation stuff here...
-          if(new_flag) printf("Cannot create a new ring!\n");
-          else {
-            new_flag = 1;
+          if(serv != NULL) printf("Cannot create a new ring!\n");
+          else
+          {
             serv = newr(atoi(args[1]), ip, port);
             printf("A new ring has been created!\n");
+            servnum = 1;
           }
         }
+        free(args);
       }
 
       else if(strncmp(token, "entry", 5) == 0){
@@ -110,9 +112,11 @@ int main(int argc, char *argv[]) {
         else {
           //do entry server stuff here...
 
+
+
           printf("The new server was entered!\n");
         }
-
+        if(args == NULL) free(args);
       }
 
       else if(strncmp(token, "sentry", 5) == 0){
@@ -120,19 +124,26 @@ int main(int argc, char *argv[]) {
         if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'sentry <i> <succi> <succi.IP> <succi.TCP>'?\n");
         else {
           //do entry server stuff here...
+          //sentry i succi s.IP s.TCP
+          
+
 
           printf("The new server was entered!\n");
         }
+        free(args);
       }
 
       else if(strcmp(token, "leave\n") == 0){
         if(serv == NULL) printf("No ring created!\n");
         else {
           // do leave ring stuff here
+
+          // fazer mais
           leave(&serv);
           freeServer(&serv);
           printf("Server left!\n");
         }
+        free(args);
       }
 
       else if(strcmp(token, "show\n") == 0){
@@ -152,6 +163,7 @@ int main(int argc, char *argv[]) {
 
           printf("Found the server with key %d!\n", atoi(args[1]));
         }
+        free(args);
       }
 
       else if(strcmp(token, "exit\n") == 0) printf("You closed the application!\n\n");
@@ -162,6 +174,6 @@ int main(int argc, char *argv[]) {
   }
   /* exit and deallocate all memory allocated */
   freeServer(&serv);
-  free(args);
+
   return 0;
 }
