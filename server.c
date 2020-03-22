@@ -8,7 +8,6 @@
 #include <netdb.h>
 #include <string.h>
 
-#define PORT "58003"
 #define max(A,B) ((A)>=(B)?(A):(B))
 
 #include "server.h"
@@ -175,52 +174,58 @@ Um nó será servidor e cliente.
 
 Portanto, do ponto de vista de servidor, estará a ouvir no seu porto, corre tcpS.
 Eventualmente terá que responder ao cliente, mas para isso é necessário saber
-que pedido é. O servidor terá que gurdar o porto com o predecessor e do sucessor
+que pedido é. O servidor terá que gurdar o porto com o predecessor e do sucessor (será que do pred sim?)
 
 Do ponto de vista de cliente, terá que saber o porto tcp etc do seu servidor, sucessor.
 Faz pedidos ao seu sucessor.
 
 */
-void tcpC() {
+void tcpC(char* ip, char* port) {
 
-  struct addrinfo hints,*res;
-  ssize_t nbytes,nleft,nwritten,nread;
+  struct addrinfo hints, *res;
+  ssize_t nbytes, nleft, nwritten, nread;
 
-  int fd,n;
-  char *ptr;
-  char in[128], buffer[128];
+  int fd, n;
+  char *ptr, in[128], buffer[128];
 
-  fd=socket(AF_INET,SOCK_STREAM,0);//TCP socket
-  if(fd==-1)exit(1);//error
+  /* Creating a TCP socket */
+  fd = socket(AF_INET,SOCK_STREAM,0);
+  if(fd == -1){
+    printf("An error occurred on socket() function!\n");
+    exit(1);
+  }
+
   memset(&hints,0,sizeof hints);
   hints.ai_family=AF_INET;//IPv4
   hints.ai_socktype=SOCK_STREAM;//TCP socket
 
-  // MUDAR IP E PORTO
-  n=getaddrinfo("127.0.0.1",PORT,&hints,&res);
-  if(n!=0)/*error*/exit(1);
+  /* Get here server's ip and port (either successor's or predecessor's) */
+  
 
-  n=connect(fd,res->ai_addr,res->ai_addrlen);
-  if(n==-1)/*error*/exit(1);
+  if(getaddrinfo(ip, port, &hints, &res) != 0){
+    printf("An error occurred on getting addresses!\n");
+    exit(1);
+  }
+  if(connect(fd,res->ai_addr,res->ai_addrlen) == -1){
+    printf("An error occurred in connection!\n");
+    exit(1);
+  }
 
   while(1){
     printf("Enter a string: ");
     if(fgets(in, 128, stdin)) {
 
-      n=write(fd,in,strlen(in));
-      if(n==-1)/*error*/{
-        printf("Error occurred!\n");
+      if(write(fd, in, strlen(in)) == -1)/*error*/{
+        printf("Error occurred in writting!\n");
         exit(1);
       }
-
-      n=read(fd,buffer,128);
-      if(n==-1)/*error*/{
-        printf("Error occurred!\n");
+      if(read(fd, buffer, 128) == -1)/*error*/{
+        printf("Error occurred in reading!\n");
         exit(1);
       }
 
       // APAGAR ECHO
-      write(1,"echo: ",6); write(1,buffer,n);
+      write(1,"echo: ",6); write(1,buffer,strlen(buffer));
 
       /* Clean arrays */
       in[128] = '\0';
@@ -231,7 +236,7 @@ void tcpC() {
 
 }
 
-void tcpS(server** serv) {
+void tcpS(char* port, server** serv) {
 
   struct addrinfo hints,*res;
   struct sockaddr_in addr; socklen_t addrlen;
@@ -255,8 +260,7 @@ void tcpS(server** serv) {
   hints.ai_socktype=SOCK_STREAM;//TCP socket
   hints.ai_flags=AI_PASSIVE;
 
-  // CHANGE PORT
-  if((errcode = getaddrinfo(NULL, PORT, &hints, &res))!=0){
+  if((errcode = getaddrinfo(NULL, port, &hints, &res))!=0){
     printf("An error occurred on getting addresses!\n");
     exit(1);
   }
@@ -272,6 +276,7 @@ void tcpS(server** serv) {
 
 
   while(1){
+
     FD_ZERO(&rfds);
     FD_SET(fd, &rfds); //adds tcp socket to rfds
 
@@ -290,7 +295,7 @@ void tcpS(server** serv) {
       if(afd > maxfd) maxfd = afd;
     }
 
-    counter=select(maxfd+1, &rfds, (fd_set*)NULL, (fd_set*)NULL, (struct timeval *)NULL);
+    counter = select(maxfd+1, &rfds, (fd_set*)NULL, (fd_set*)NULL, (struct timeval *)NULL);
     if(counter <= 0) {
       printf("An error occurred on select() function!\n");
       exit(1);
@@ -323,14 +328,23 @@ void tcpS(server** serv) {
 
       afd = (*serv)->fd[i];
       if(FD_ISSET(afd, &rfds)){
+
         if((n = read(afd, buffer, 128))!=0){
           if(n == -1) {
             printf("An error occurred on read() function!\n");
             exit(1);
           }
+
           printf("from %s:%d   fd: %d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), afd);
           write(1,"Received: ",10); write(1, buffer, n);
           printf("\n");
+
+          /* Save client port here either succesor's either predecessor's */
+
+
+          /* Interpretate message here and answer to client if needed*/
+
+
           //write buffer in afd
           write(afd, buffer, n);
         }
@@ -339,13 +353,14 @@ void tcpS(server** serv) {
           close(afd);
           (*serv)->fd[i] = 0;
         }//connection closed by peer
-        // clearing buffer
+
+        /* Cleaning buffer */
         buffer[n] = '\0';
       }
     }
-
   }
 
+  // CHANGE THIS IF NEEDED
   printf("Closing!\n");
   freeaddrinfo(res);
   close(fd);

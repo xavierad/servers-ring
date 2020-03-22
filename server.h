@@ -16,5 +16,10 @@ void showState(server* serv);
 void leave(server** serv);
 
 
+void tcpC(char* ip, char* port);
+
+void tcpS(char* port, server** serv);
+
+
 
 #endif
