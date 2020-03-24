@@ -7,15 +7,21 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <string.h>
-
+#include "server.h"
 #define max(A,B) ((A)>=(B)?(A):(B))
 
-#include "server.h"
 
 struct _server
 {
-  /* client sockets array ----- M: I think it is obsolete -> see end of struct */
-  /*int *fd ;*/
+
+  int *fd;
+  //To discuss:
+/*  int fd_tcpS;
+  int fd_tcpC;
+  int fd_tcpC1;
+  int fd_tcpC2;
+  int fd_udpS;
+  int fd_udpC;*/
 
   /* server state */
   int node_key;
@@ -29,57 +35,14 @@ struct _server
   char *succ_TCP;
 
   int succ2_key;
-  char *succ2_IP;
+  char *succ2_IP; //necessário?
+
   //acho que dá jeito para certas mensagens - a verificar
   char *prev_IP;
   char *prev_TCP;
 
-  //To discuss:
-  int fd_tcpS;
-  int fd_tcpC;
-  int fd_tcpC1;
-  int fd_tcpC2;
-  int fd_udpS;
-  int fd_udpC;
+
 };
-
-/*******************************************************************************
- * create_serv() - CREATES A SERVER THAT WILL ENTER THE RING
- *
- * returns: server
-*******************************************************************************/
-server* create_serv()
-{
-  server *serv = NULL;
-
-  /* allacating memory for the local server */
-  serv = (server*) malloc(sizeof(server));
-  if(serv == NULL)
-  {
-    printf("Something went wrong with creating new server!\n");
-    exit(0);
-  }
-
-  /* info assignement */
-  serv->node_key = args[1];
-  serv->node_IP = args[3]; /*-----> what to put ????
-                            coloquei i para o caso em que não se comunica com outras máquinas */
-  serv-> = NULL;  //-----> what to put ????*/
-  serv->node_UDP = NULL;
-
-  serv->succ_key = args[2];
-  serv->succ_IP = args[3];
-  serv->succ_TCP = args[4];
-
-  serv->succ2_key = -1;
-  serv->succ2_IP = NULL;
-
-  serv->prev_IP = NULL;
-  serv->prev_TCP = NULL;
-
-  //fds are not supposed to be initialized. right?
-  return serv;
-}
 
 
 
@@ -129,18 +92,18 @@ server* newr(int i, char* ip, char* port)
     exit(0);
   }
 
-  /* info assignement */
+  /* info assignement, -1 or NULL means empty */
   serv->node_key = i;
   serv->node_IP = ip;
   serv->node_TCPs = port;
   serv->node_TCPc = NULL;
   serv->node_UDP = NULL;
 
-  serv->succ_key = i;
+  serv->succ_key = -1;
   serv->succ_IP = NULL;
   serv->succ_TCP = NULL;
 
-  serv->succ2_key = i;
+  serv->succ2_key = -1;
   serv->succ2_IP = NULL;
 
   serv->prev_IP = NULL;
@@ -197,17 +160,21 @@ void leave(server** serv)
 }
 
 
-/*******************************************************************************
- * succLeft(server* )
- *
- * Description: checks if any session is closed. If so,
- * returns: void
-*******************************************************************************/
 
+// mudar talvez alguns argumentos, pred e/ou ssucc
+int update_state(server** serv, int key, int succ_key, char* succ_IP, char* succ_TCP) {
+  printf("succ tcp ip %s %s\n",succ_TCP, succ_IP);
+  /* if the key inserted is mine */
+  if((*serv)->node_key == key) {
 
+    (*serv)->succ_key = succ_key;
+    strcpy((*serv)->succ_IP, succ_IP);
+    strcpy((*serv)->succ_TCP, succ_TCP);
 
-
-
+    return 1;
+  }
+  else return 0;
+}
 
 
 
@@ -218,8 +185,6 @@ void leave(server** serv)
 void search_key(int key){
 }*/
 
-
-
 /* Ideias para as comunicações
 Um nó será servidor e cliente.
 Portanto, do ponto de vista de servidor, estará a ouvir no seu porto, corre tcpS.
@@ -228,6 +193,81 @@ que pedido é. O servidor terá que gurdar o porto com o predecessor e do sucess
 Do ponto de vista de cliente, terá que saber o porto tcp etc do seu servidor, sucessor.
 Faz pedidos ao seu sucessor.
 */
+
+
+
+/*******************************************************************************
+ * init_tcp_server(char *port) - "opens" a tcp server
+ *                                       -> waiting from connect from client
+ *
+ * returns: fd of the created socket
+*******************************************************************************/
+void init_tcp_server(char *port, server **serv) {
+
+  struct addrinfo hints,*res;
+  struct sockaddr_in addr; socklen_t addrlen;
+
+
+  int fd, newfd, afd=0, errcode, maxfd, counter, /*client_socket[30] = {0},*/ max_clients = 2;
+  char *ptr, buffer[128];
+  ssize_t n, nw;
+
+  (*serv)->fd = (int*) malloc(max_clients * sizeof(int));
+
+  fd_set rfds;
+
+  if((fd=socket(AF_INET,SOCK_STREAM,0)) == -1){
+    printf("An error occurred on socket() function!\n");
+    exit(1);
+  }
+
+  memset(&hints, 0, sizeof hints);
+  hints.ai_family=AF_INET;//IPv4
+  hints.ai_socktype=SOCK_STREAM;//TCP socket
+  hints.ai_flags=AI_PASSIVE;
+
+  if((errcode = getaddrinfo(NULL, port, &hints, &res))!=0){
+    printf("An error occurred on getting addresses!\n");
+    exit(1);
+  }
+  if(bind(fd, res->ai_addr, res->ai_addrlen) == -1) {
+    printf("An error occurred on binding!\n");
+    exit(1);
+  }
+  if(listen(fd, 5) == -1){
+    printf("An error occurred on listening!\n");
+    exit(1);
+  }
+  printf("Starting to listen ...\n");
+
+}
+
+
+/*******************************************************************************
+ * create_tcp_client(server *serv) - creates  a tcp client
+ *
+ * returns: fd of the created socket
+*******************************************************************************/
+void init_tcp_client(server *serv)
+{
+	int fd, errcode;
+	struct addrinfo hints, *res;
+  ssize_t n;
+
+  fd = socket(AF_INET,SOCK_STREAM,0);
+  //if (fd==-1) return -1; //error
+
+  memset(&hints, 0, sizeof hints);
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+
+  //errcode = getaddrinfo( serv->succ_IP, serv->succ_TCP, &hints, &res);
+  //if((errcode) != 0) return -1; //error
+
+  //serv->fd_tcpC = fd;
+
+}
+
 
 ///////////////////////// delete later//////////////////////////////////////////////////////////
 void tcpC(char* ip, char* port) {
@@ -291,72 +331,6 @@ void tcpC(char* ip, char* port) {
 
 
 
-/*******************************************************************************
- * create_tcp_server(char *port) - "opens" a tcp server
- *                                       -> waiting from connect from client
- *
- * returns: fd of the created socket
-*******************************************************************************/
-int create_tcp_server(server *serv)
-{
-	int fd, errcode;
-	struct addrinfo hints, *res;
-  ssize_t n;
-
-    fd = socket(AF_INET,SOCK_STREAM,0);
-    if (fd==-1) return -1; //error
-
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE;
-
-    errcode = getaddrinfo( NULL, serv->node_TCPs, &hints, &res);
-    if((errcode) != 0) return -1; //error
-
-    n = bind(fd, res->ai_addrlen);
-    if(n==-1) return -1; //error
-
-    if(listen(fd,5)==-1) return -1; //error
-
-    serv->fd_tcpS = fd;
-
-    return fd;
-
-}
-
-
-/*******************************************************************************
- * create_tcp_client(server *serv) - creates  a tcp client
- *
- * returns: fd of the created socket
-*******************************************************************************/
-int create_tcp_client(server *serv)
-{
-	int fd, errcode;
-	struct addrinfo hints, *res;
-  ssize_t n;
-
-    fd = socket(AF_INET,SOCK_STREAM,0);
-    if (fd==-1) return -1; //error
-
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-
-    errcode = getaddrinfo( serv->succ_IP, serv->succ_TCP, &hints, &res);
-    if((errcode) != 0) return -1; //error
-
-    serv->fd_tcpC = fd;
-    return fd;
-
-}
-
-
-
-
-
-
 ///////////////////////// delete later//////////////////////////////////////////////////////////
 void tcpS(char* port, server** serv) {
 
@@ -395,24 +369,25 @@ void tcpS(char* port, server** serv) {
     printf("An error occurred on listening!\n");
     exit(1);
   }
+  printf("Starting to listen ...\n");
 
   while(1){
 
     FD_ZERO(&rfds);
-    FD_SET(fd, &rfds); //adds tcp socket to rfds
+    FD_SET(fd, &rfds); /* dds tcp socket to rfds */
 
-    maxfd = fd; //socket id, fd
+    maxfd = fd; /* socket id, fd */
 
-    //add child sockets to set
+    /* add child sockets to set */
     int i;
     for (i = 0; i < max_clients; i++) {
-      //socket descriptor
+      /* socket descriptor */
       afd =(*serv)->fd[i];
 
-      //if valid socket descriptor then add to read list
+      /* if valid socket descriptor then add to read list */
       if(afd > 0) FD_SET(afd, &rfds);
 
-      //highest file descriptor number, need it for the select function
+      /* highest file descriptor number, need it for the select function */
       if(afd > maxfd) maxfd = afd;
     }
 
@@ -421,8 +396,6 @@ void tcpS(char* port, server** serv) {
       printf("An error occurred on select() function!\n");
       exit(1);
     }
-
-
 
     if(FD_ISSET(fd, &rfds)){
 
@@ -437,9 +410,9 @@ void tcpS(char* port, server** serv) {
       /* Save client port here either succesor's either predecessor's */
 
 
-      //add new socket to array of sockets
+      /* add new socket to array of sockets */
       for (i = 0; i < max_clients; i++) {
-          //if position is empty
+          /* if position is empty, note that there is a break! */
           if((*serv)->fd[i] == 0 ) {
               (*serv)->fd[i] = newfd;
               printf("Adding to list of sockets %d\n\n" , newfd);

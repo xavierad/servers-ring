@@ -15,10 +15,17 @@ void showState(server* serv);
 
 void leave(server** serv);
 
+int update_state(server** serv, int key, int succ_key, char* succ_IP, char* succ_TCP);
 
+void init_tcp_server(char* port, server** serv);
+
+void init_tcp_client(server* serv);
+
+
+/*
 void tcpC(char* ip, char* port);
 
-void tcpS(char* port, server** serv);
+void tcpS(char* port, server** serv);*/
 
 
 

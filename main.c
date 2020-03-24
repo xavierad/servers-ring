@@ -35,7 +35,6 @@
 
 int main(int argc, char *argv[]) {
 
-  int servnum = 0; /* counters the number of servers in the ring */
   char cmd[255] = {'\0'}; /* string that receives commands */
   char *token = NULL; /* auxiliary string that receives cmd splitted, takes all its arguments */
 
@@ -43,9 +42,8 @@ int main(int argc, char *argv[]) {
   char *port = NULL; /* port to be used  */
   server *serv = NULL; // struct server to allocate its state
 
-  fd_set rfds;  //moved from tcpS
-  server *newsrv = NULL;
-  int nfd; // new fd (aux)
+
+
 
   /* validating the initiating command: ./dkt <ip> <port> */
   if(argc != 3) {
@@ -68,8 +66,6 @@ int main(int argc, char *argv[]) {
             printf("IP addresses must contain only numbers\n\n");
             exit(0);
             break;
-          //default:
-             //OK
     }
 
     /* then, check if port is in the correct format, see function for details */
@@ -79,6 +75,7 @@ int main(int argc, char *argv[]) {
     printf("\n____________________________________________________________\n");
     printf("\nApplication initialized!\n");
     printf("\n-IP addr.: %s\n-PORT: %s\n\n", ip, port);
+
   }
 
 
@@ -90,23 +87,22 @@ int main(int argc, char *argv[]) {
 
     if(fgets(cmd, 255, stdin)){
 
+      showState(serv);
+
       token = strtok(cmd, " "); /* retrieve each argument of cmd, separated by a space */
 
       /* validating the commands */
       if(strcmp(token, "new") == 0){
 
         if(!checkCommand_NEW_FIND(token)) printf("Did you mean something like 'new <i>'?\n");
-        else {
-
-          //do ring creation stuff here...
-          if(serv != NULL) printf("Cannot create a new ring!\n");
-          else
-          {
-            serv = newr(atoi(args[1]), ip, port);
-            printf("A new ring has been created!\n");
-            servnum = 1;
+        else if(serv != NULL) printf("Cannot create a new ring!\n");
+        else
+        {
+          /* ring creation stuff here */
+          serv = newr(atoi(args[1]), ip, port); /* new ring/server creation */
+          printf("A new ring has been created!\n");
+          init_tcp_server(port, &serv); /* The TCP server initialized */
           }
-        }
         free(args);
       }
 
@@ -114,57 +110,32 @@ int main(int argc, char *argv[]) {
 
         // number of arguments comparison and validating the required integer
         if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'entry <i> <boot> <boot.IP> <boot.TCP>'?\n");
+        else if(serv == NULL) printf("No ring created!\n");
         else {
           //do entry server stuff here...
 
 
 
-          printf("The new server was entered!\n");
+          printf("The new server has entered!\n");
         }
-        if(args == NULL) free(args);
+        free(args);
       }
 
       else if(strncmp(token, "sentry", 5) == 0){
 
         if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'sentry <i> <succi> <succi.IP> <succi.TCP>'?\n");
+        else if(serv == NULL) printf("No ring created!\n");
         else {
 
-          //do entry server stuff here...
-          //sentry i succi s.IP s.TCP
+          /* entry server stuff here */
+          if(!update_state(&serv, atoi(args[1]), atoi(args[2]), args[3], args[4])) printf("Key <i> not the local!\n");
+          else{
+            /* TCP session with succ, I'm client */
+            init_tcp_client(serv);
+            showState(serv);
 
-          //allocate mem to a server that enters the ring and fill it info
-          newsrv = create_serv();
-
-          //create a tcp server up until listening
-          nfd = create_tcp_server(newsrv);
-          if(nfd == -1)
-          {
-            printf("An error occured when creating a tcp server \n");
-
+            printf("The new server has entered!\n");
           }
-          else
-          {
-            //save the fd on the fd table
-            FD_SET(nfd, rfds);
-
-            nfd = create_tcp_client(newsrv);
-            if(nfd == -1)
-            {
-              printf("An error occured when creating a tcp client \n");
-
-            }
-            else
-            {
-              FD_SET(nfd, rfds);
-
-              //now we must start communication between servers
-            }
-
-
-
-            printf("The new server was entered!\n");
-          }
-
         }
         free(args);
       }
@@ -188,13 +159,13 @@ int main(int argc, char *argv[]) {
           printf("Showing server state ...\n");
           showState(serv);
         }
-
       }
 
       else if(strcmp(token, "find") == 0){
 
         if(!checkCommand_NEW_FIND(token)) printf("Did you mean something like 'find <i>'?\n");
-            else {
+        else if(serv == NULL) printf("No ring created!\n");
+        else {
           //do find server stuff here...
 
           printf("Found the server with key %d!\n", atoi(args[1]));
@@ -208,6 +179,7 @@ int main(int argc, char *argv[]) {
 
     }
   }
+
   /* exit and deallocate all memory allocated */
   freeServer(&serv);
 
