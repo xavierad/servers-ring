@@ -132,7 +132,6 @@ int main(int argc, char *argv[]) {
           else{
             /* TCP session with succ, I'm client */
             init_tcp_client(serv);
-            showState(serv);
 
             printf("The new server has entered!\n");
           }

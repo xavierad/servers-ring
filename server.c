@@ -163,9 +163,11 @@ void leave(server** serv)
 
 // mudar talvez alguns argumentos, pred e/ou ssucc
 int update_state(server** serv, int key, int succ_key, char* succ_IP, char* succ_TCP) {
-  printf("succ tcp ip %s %s\n",succ_TCP, succ_IP);
+
   /* if the key inserted is mine */
   if((*serv)->node_key == key) {
+    (*serv)->succ_IP = realloc((*serv)->succ_IP, strlen(succ_IP) * sizeof(char));
+    (*serv)->succ_TCP = realloc((*serv)->succ_TCP, strlen(succ_TCP) * sizeof(char));
 
     (*serv)->succ_key = succ_key;
     strcpy((*serv)->succ_IP, succ_IP);
