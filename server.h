@@ -17,11 +17,16 @@ void leave(server** serv);
 
 int update_state(server** serv, int key, int succ_key, char* succ_IP, char* succ_TCP);
 
-void tcpS(server** serv);
+int init_fd_parent();
 
-void init_tcp_server(char* port, server** serv);
+void init_tcp_server(char* port, server** serv, int fd);
 
-void init_tcp_client(server* serv);
+void init_tcp_client(server** serv);
+
+int tcpS(server** serv, fd_set* rfds);
+
+void tcpC(server* serv);
+
 
 
 /*

@@ -43,6 +43,8 @@ int main(int argc, char *argv[]) {
   char *port = NULL; /* port to be used  */
   server *serv = NULL; /* struct server to allocate its state */
 
+  int maxfd, fd_parent;
+  fd_set readfds;
 
   /* validating the initiating command: ./dkt <ip> <port> */
   if(argc != 3) {
@@ -82,18 +84,32 @@ int main(int argc, char *argv[]) {
     printf("\n-IP addr.: %s\n-PORT: %s\n\n", ip, port);
 
   }
-
+  fd_parent = init_fd_parent();
+  maxfd = fd_parent;
 
   /* application loop */
   while(strcmp(cmd, "exit\n") != 0){
 
     memset(cmd, '\0', sizeof(cmd)); /* setting all values of cmd */
 
-    if(serv != NULL) tcpS(&serv);
-
     printf("\n > ");
+	  fflush(stdout);
 
-    if(fgets(cmd, 255, stdin)){
+    FD_ZERO(&readfds);          /* initialize the fd set */
+    FD_SET(0, &readfds);        /* add stdin fd (0) */
+    FD_SET(fd_parent, &readfds);
+    if (select(maxfd+1, &readfds, (fd_set*) NULL, (fd_set*) NULL, (struct timeval*) NULL) < 0) {
+      perror("ERROR in select");
+    }
+
+    if(serv != NULL) {
+      maxfd = tcpS(&serv, &readfds);
+      tcpC(serv);
+    }
+
+    if (FD_ISSET(0, &readfds)) {
+
+      fgets(cmd, 255, stdin);
 
       token = strtok(cmd, " "); /* retrieve each argument of cmd, separated by a space */
 
@@ -107,7 +123,7 @@ int main(int argc, char *argv[]) {
           /* ring creation stuff here */
           serv = newr(atoi(args[1]), ip, port); /* new ring/server creation */
           printf("A new ring has been created!\n");
-          init_tcp_server(port, &serv); /* The TCP server initialized */
+          init_tcp_server(port, &serv, fd_parent); /* The TCP server initialized */
         }
         free(args);
       }
@@ -137,7 +153,7 @@ int main(int argc, char *argv[]) {
           if(!update_state(&serv, atoi(args[1]), atoi(args[2]), args[3], args[4])) printf("Key <i> not the local!\n");
           else{
             /* TCP session with succ, I'm client */
-            init_tcp_client(serv);
+            init_tcp_client(&serv);
 
             printf("The new server has entered!\n");
           }
@@ -182,9 +198,9 @@ int main(int argc, char *argv[]) {
 
       else printf("Command not found!\n");
 
-    }
+    }// if FD_ISSET
 
-  }
+  }// while cmd not equal to exit
 
   /* exit and deallocate all memory allocated */
   freeServer(&serv);
