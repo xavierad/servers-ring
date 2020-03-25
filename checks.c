@@ -193,6 +193,8 @@ int checkCommand_S_ENTRY(char* token)
       printf("Port must be between (2^10 + 1) and 2^16\n");
       return 0;
     }
+
+    strtok(args[4], "\n");
   }
   else
   {

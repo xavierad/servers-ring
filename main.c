@@ -22,7 +22,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h> // for fd_set
 
 #include "checks.h"
 #include "server.h"
@@ -35,14 +34,14 @@
 
 int main(int argc, char *argv[]) {
 
+  /* Command variables */
   char cmd[255] = {'\0'}; /* string that receives commands */
   char *token = NULL; /* auxiliary string that receives cmd splitted, takes all its arguments */
 
+  /* Server variables */
   char *ip = NULL; /* IP address of the local server */
   char *port = NULL; /* port to be used  */
-  server *serv = NULL; // struct server to allocate its state
-
-
+  server *serv = NULL; /* struct server to allocate its state */
 
 
   /* validating the initiating command: ./dkt <ip> <port> */
@@ -51,7 +50,12 @@ int main(int argc, char *argv[]) {
     exit(0);
   }
   else {
-    ip = argv[1]; port = argv[2]; /* ip and port assignement */
+    /* ip and port assignement */
+    ip = (char *) malloc((strlen(argv[1]) + 1) * sizeof(char));
+    strcpy(ip, argv[1]);
+
+    port = (char *) malloc((strlen(argv[2]) + 1) * sizeof(char));
+    strcpy(port, argv[2]);
 
     /* first check if IP is in the correct format, see function for details */
     switch(check_IP(argv[1]))
@@ -69,7 +73,8 @@ int main(int argc, char *argv[]) {
     }
 
     /* then, check if port is in the correct format, see function for details */
-    if(check_Port(port)==0) exit(1);
+    if(check_Port(port) == 0) exit(1);
+    strtok(port, "\n");
 
     /* Everything is OK! */
     printf("\n____________________________________________________________\n");
@@ -81,13 +86,14 @@ int main(int argc, char *argv[]) {
 
   /* application loop */
   while(strcmp(cmd, "exit\n") != 0){
+
     memset(cmd, '\0', sizeof(cmd)); /* setting all values of cmd */
+
+    if(serv != NULL) tcpS(&serv);
 
     printf("\n > ");
 
     if(fgets(cmd, 255, stdin)){
-
-      showState(serv);
 
       token = strtok(cmd, " "); /* retrieve each argument of cmd, separated by a space */
 
@@ -102,7 +108,7 @@ int main(int argc, char *argv[]) {
           serv = newr(atoi(args[1]), ip, port); /* new ring/server creation */
           printf("A new ring has been created!\n");
           init_tcp_server(port, &serv); /* The TCP server initialized */
-          }
+        }
         free(args);
       }
 
@@ -177,6 +183,7 @@ int main(int argc, char *argv[]) {
       else printf("Command not found!\n");
 
     }
+
   }
 
   /* exit and deallocate all memory allocated */
