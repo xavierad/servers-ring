@@ -274,7 +274,7 @@ void init_tcp_client(server *serv) {
   hints.ai_socktype = SOCK_STREAM;
 
   /* Conneting to server */
-  printf("succ_IP %s succ_TCP %s\n", serv->succ_TCP, serv->succ_IP);
+  //printf("succ_IP %s succ_TCP %s\n", serv->succ_TCP, serv->succ_IP);
   if(getaddrinfo(serv->succ_IP, serv->succ_TCP, &hints, &res) != 0){
     printf("An error occurred on getting addresses!\n");
     exit(1);
@@ -290,6 +290,7 @@ void init_tcp_client(server *serv) {
     printf("Error occurred in writting!\n");
     exit(1);
   }
+  printf("msg to be sent: %s\n", msg);
   if(read(fd, buffer, 128) == -1)/*error*/{
     printf("Error occurred in reading!\n");
     exit(1);
@@ -332,7 +333,7 @@ void tcpS(server** serv) {
   /* select blocks the programm! */
   counter = select(maxfd+1, &rfds, (fd_set*)NULL, (fd_set*)NULL, &timeout);
   if(counter <= 0) {
-    printf("An error occurred on select() function!\n");
+    printf("No message received, but server still alive!\n");
   }
 
   if(FD_ISSET(fd, &rfds)){
