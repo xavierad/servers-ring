@@ -150,7 +150,6 @@ int checkCommand_S_ENTRY(char* token)
   for ( ;token = strtok(NULL, " "); token != NULL)
   {
     args[i] = token;
-    printf("token %s\n", token);
 
     i++;
     if(i > 5) {

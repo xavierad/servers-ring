@@ -43,6 +43,9 @@ int main(int argc, char *argv[]) {
   char *port = NULL; /* port to be used  */
   server *serv = NULL; /* struct server to allocate its state */
 
+  int left = 1;
+  int entry = 0;
+
   int maxfd, fd_parent;
   fd_set readfds;
 
@@ -98,13 +101,9 @@ int main(int argc, char *argv[]) {
     FD_ZERO(&readfds);          /* initialize the fd set */
     FD_SET(0, &readfds);        /* add stdin fd (0) */
     FD_SET(fd_parent, &readfds);
+
     if (select(maxfd+1, &readfds, (fd_set*) NULL, (fd_set*) NULL, (struct timeval*) NULL) < 0) {
       perror("ERROR in select");
-    }
-
-    if(serv != NULL) {
-      maxfd = tcpS(&serv, &readfds);
-      tcpC(serv);
     }
 
     if (FD_ISSET(0, &readfds)) {
@@ -139,13 +138,16 @@ int main(int argc, char *argv[]) {
 
 
           printf("The new server has entered!\n");
+          entry = 1;
+          left = 0;
         }
         free(args);
       }
 
       else if(strncmp(token, "sentry", 5) == 0){
 
-        if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'sentry <i> <succi> <succi.IP> <succi.TCP>'?\n");
+        if(!left || entry) printf("You cannot do a sentry command!\n");
+        else if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'sentry <i> <succi> <succi.IP> <succi.TCP>'?\n");
         else if(serv == NULL) printf("No ring created!\n");
         else {
 
@@ -153,9 +155,11 @@ int main(int argc, char *argv[]) {
           if(!update_state(&serv, atoi(args[1]), atoi(args[2]), args[3], args[4])) printf("Key <i> not the local!\n");
           else{
             /* TCP session with succ, I'm client */
-            init_tcp_client(&serv);
+            init_tcp_client(&serv, &readfds);
 
             printf("The new server has entered!\n");
+            entry = 1;
+            left = 0;
           }
         }
         free(args);
@@ -170,6 +174,8 @@ int main(int argc, char *argv[]) {
           leave(&serv);
           freeServer(&serv);
           printf("Server left!\n");
+          left = 1;
+          entry = 0;
         }
         free(args);
       }
@@ -200,6 +206,11 @@ int main(int argc, char *argv[]) {
 
     }// if FD_ISSET
 
+    if(serv != NULL) {
+      printf("\n");
+      maxfd = tcpS(&serv, &readfds);
+      tcpC(&serv, &readfds);
+    }
   }// while cmd not equal to exit
 
   /* exit and deallocate all memory allocated */
