@@ -103,10 +103,10 @@ int main(int argc, char *argv[]) {
     FD_SET(0, &readfds);        /* add stdin fd (0) */
     FD_SET(fd_parent, &readfds);
     FD_SET(afd, &readfds);
-    maxfd=max(maxfd, afd);
+    maxfd=max(maxfd,afd);
 
     FD_SET(fd_tcpC, &readfds);
-    maxfd=max(maxfd, fd_tcpC);
+    maxfd=max(maxfd,fd_tcpC);
 
 
     if (select(maxfd+1, &readfds, (fd_set*) NULL, (fd_set*) NULL, (struct timeval*) NULL) < 0) {
@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
           if(!update_state(&serv, atoi(args[1]), atoi(args[2]), args[3], args[4])) printf("Key <i> is not the local!\n");
           else{
             /* TCP session with succ, I'm client */
-            fd_tcpC = init_tcp_client(&serv, &readfds, "new");
+            fd_tcpC = init_tcp_client(&serv, &readfds);
 
             printf("The new server has entered!\n");
             entry = 1;
@@ -217,7 +217,7 @@ int main(int argc, char *argv[]) {
       printf("\n");
       tcpS_recv(&serv, readfds);
       afd = tcpS(&serv, readfds);
-      fd_tcpC = tcpC(&serv, &readfds);
+      tcpC(&serv, readfds);
     }
   }// while cmd not equal to exit
 

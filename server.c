@@ -270,7 +270,7 @@ void init_tcp_server(char *port, server **serv, int fd) {
  *
  * returns: fd of the created socket
 *******************************************************************************/
-int init_tcp_client(server** serv, fd_set *rfds, char *mode) {
+int init_tcp_client(server** serv, fd_set *rfds) {
 
   struct addrinfo hints, *res;
   ssize_t nbytes, nleft, nwritten, nread;
@@ -287,7 +287,6 @@ int init_tcp_client(server** serv, fd_set *rfds, char *mode) {
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
 
-
   /* Saving my fd in order to get its value in tcpC and set it to rfds */
   (*serv)->fd_tcpC = fd;
   FD_SET(fd, &(*rfds));
@@ -303,19 +302,13 @@ int init_tcp_client(server** serv, fd_set *rfds, char *mode) {
   }
 
   /* Sending a request message */
-  if(strcmp(mode, "new")){
-    sprintf(msg, "NEW %d %s %s\n", (*serv)->node_key, (*serv)->node_IP, (*serv)->node_TCPs );
-    if(write(fd, msg, strlen(msg)) == -1)/*error*/{
-      perror("Error occurred in writting!\n");
-      exit(1);
-    }
-  }
-  else if(strcmp(mode, "conf")){
-    strcpy(msg, "SUCCCONF\n");
+  sprintf(msg, "NEW %d %s %s\n", (*serv)->node_key, (*serv)->node_IP, (*serv)->node_TCPs );
+  if(write(fd, msg, strlen(msg)) == -1)/*error*/{
+    perror("Error occurred in writting!\n");
+    exit(1);
   }
   printf("Message to be sent: %s\n", msg);
 
-  freeaddrinfo(res);
   return fd;
 }
 
@@ -436,13 +429,13 @@ void tcpS_recv(server **serv, fd_set rfds){
 
 
 
-int tcpC (server** serv, fd_set* rfds) {
+void tcpC (server** serv, fd_set rfds) {
 
   char buffer[128] = {'\0'};
-  char first[128], ip[128], port[128], resp[128];
+  char first[128], ip[128], port[128];
   int key;
 
-  if((*serv)->fd_tcpC != -1 && FD_ISSET((*serv)->fd_tcpC, &(*rfds))){
+  if((*serv)->fd_tcpC != -1 && FD_ISSET((*serv)->fd_tcpC, &rfds)){
     if(read((*serv)->fd_tcpC, buffer, 128) == -1){
       perror("Not reading!\n");
       exit(1);
@@ -451,7 +444,7 @@ int tcpC (server** serv, fd_set* rfds) {
       printf("From server: %s\n", buffer);
       sscanf(buffer, "%s %d %s %s", first, &key, ip, port);
 
-      /* Save my 2nd successor info */
+      /* Save my 2nd succesor info */
       if (strcmp(first, "SUCC")){
         (*serv)->succ2_key = key;
         (*serv)->succ2_IP = realloc((*serv)->succ2_IP, (strlen(ip)+1) * sizeof(char));
@@ -459,35 +452,10 @@ int tcpC (server** serv, fd_set* rfds) {
 
         (*serv)->succ2_TCP = realloc((*serv)->succ2_TCP, (strlen(port)+1) * sizeof(char));
         strcmp((*serv)->succ2_TCP, port);
-
-        return 0;
-
       }
 
-      /* Update the successor to the new */
-      else if (strcmp(first, "NEW")){
-        (*serv)->succ_key = key;
-        (*serv)->succ_IP = realloc((*serv)->succ_IP, (strlen(ip)+1) * sizeof(char));
-        strcmp((*serv)->succ_IP, ip);
-
-        (*serv)->succ_TCP = realloc((*serv)->succ_TCP, (strlen(port)+1) * sizeof(char));
-        strcmp((*serv)->succ_TCP, port);
-
-        /* Inform to server's predecessor about i */
-        sprintf(resp, "SUCC %d %s %s\n", (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP);
-        printf("\nTo send to my predecessor (about my new successor): %s\n", resp);
-        write((*serv)->fd_pred, resp, strlen(resp));
-
-        /* Closing tcp session, my successor will change */ //VERIFICAR!
-        close((*serv)->fd_tcpC);
-
-        /* Confirm to the new successor, sending SUCCCONF */
-        (*serv)->fd_tcpC = init_tcp_client(&(*serv), &(*rfds), "conf");
-
-        return (*serv)->fd_tcpC;
-      }
+      //if (strcmp(first, "NEW")) sscanf(buffer, "%s %d %s %s", )
 
     }
   }
-  return 0;
 }
