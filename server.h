@@ -21,11 +21,13 @@ int init_fd_parent();
 
 void init_tcp_server(char* port, server** serv, int fd);
 
-void init_tcp_client(server** serv, fd_set* rfds);
+int init_tcp_client(server** serv, fd_set* rfds, char* mode);
 
-int tcpS(server** serv, fd_set* rfds);
+int tcpS(server** serv, fd_set rfds);
 
-void tcpC(server** serv, fd_set* rfds);
+void tcpS_recv(server** serv, fd_set rfds);
+
+int tcpC(server** serv, fd_set *rfds);
 
 
 

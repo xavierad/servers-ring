@@ -25,6 +25,7 @@
 
 #include "checks.h"
 #include "server.h"
+#define max(A,B) ((A)>=(B)?(A):(B))
 
 
 
@@ -46,7 +47,7 @@ int main(int argc, char *argv[]) {
   int left = 1;
   int entry = 0;
 
-  int maxfd, fd_parent;
+  int maxfd, fd_parent, afd=0, fd_tcpC=0;
   fd_set readfds;
 
   /* validating the initiating command: ./dkt <ip> <port> */
@@ -101,6 +102,12 @@ int main(int argc, char *argv[]) {
     FD_ZERO(&readfds);          /* initialize the fd set */
     FD_SET(0, &readfds);        /* add stdin fd (0) */
     FD_SET(fd_parent, &readfds);
+    FD_SET(afd, &readfds);
+    maxfd=max(maxfd, afd);
+
+    FD_SET(fd_tcpC, &readfds);
+    maxfd=max(maxfd, fd_tcpC);
+
 
     if (select(maxfd+1, &readfds, (fd_set*) NULL, (fd_set*) NULL, (struct timeval*) NULL) < 0) {
       perror("ERROR in select");
@@ -152,10 +159,10 @@ int main(int argc, char *argv[]) {
         else {
 
           /* entry server stuff here */
-          if(!update_state(&serv, atoi(args[1]), atoi(args[2]), args[3], args[4])) printf("Key <i> not the local!\n");
+          if(!update_state(&serv, atoi(args[1]), atoi(args[2]), args[3], args[4])) printf("Key <i> is not the local!\n");
           else{
             /* TCP session with succ, I'm client */
-            init_tcp_client(&serv, &readfds);
+            fd_tcpC = init_tcp_client(&serv, &readfds, "new");
 
             printf("The new server has entered!\n");
             entry = 1;
@@ -208,8 +215,9 @@ int main(int argc, char *argv[]) {
 
     if(serv != NULL) {
       printf("\n");
-      maxfd = tcpS(&serv, &readfds);
-      tcpC(&serv, &readfds);
+      tcpS_recv(&serv, readfds);
+      afd = tcpS(&serv, readfds);
+      fd_tcpC = tcpC(&serv, &readfds);
     }
   }// while cmd not equal to exit
 
