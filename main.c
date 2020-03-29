@@ -211,6 +211,7 @@ int main(int argc, char *argv[]) {
 
       else printf("Command not found!\n");
 
+      continue;
     }// if FD_ISSET
 
     if(serv != NULL) {
