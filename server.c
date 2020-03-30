@@ -108,7 +108,7 @@ server* newr(int i, char* ip, char* port)
   serv = (server*) malloc(sizeof(server));
   if(serv == NULL)
   {
-    perror("Something went wrong with creating new ring!\n");
+    perror("Something went wrong with creating new ring");
     exit(0);
   }
 
@@ -256,15 +256,15 @@ void init_tcp_server(char *port, server **serv, int fd) {
   //(*serv)->fd_pred = fd;
 
   if((errcode = getaddrinfo(NULL, (*serv)->node_TCPs, &hints, &res))!=0){
-    perror("An error occurred on getting addresses!\n");
+    perror("An error occurred on getting addresses");
     exit(1);
   }
   if(bind(fd, res->ai_addr, res->ai_addrlen) == -1) {
-    perror("An error occurred on binding!\n");
+    perror("An error occurred on binding");
     exit(1);
   }
   if(listen(fd, 5) == -1){
-    perror("An error occurred on listening!\n");
+    perror("An error occurred on listening");
     exit(1);
   }
   printf("Starting to listen ...\n");
@@ -287,7 +287,7 @@ int init_tcp_client(server** serv, fd_set *rfds) {
   char msg[128], buffer[128];
 
   if((fd=socket(AF_INET,SOCK_STREAM,0)) == -1){
-    perror("An error occurred on socket() function!\n");
+    perror("An error occurred on socket() function");
     exit(1);
   }
 
@@ -301,18 +301,18 @@ int init_tcp_client(server** serv, fd_set *rfds) {
 
   /* Conneting to server */
   if(getaddrinfo((*serv)->succ_IP, (*serv)->succ_TCP, &hints, &res) != 0){
-    perror("An error occurred on getting addresses!\n");
+    perror("An error occurred on getting addresses");
     exit(1);
   }
   if(connect(fd, res->ai_addr,res->ai_addrlen) == -1){
-    perror("An error occurred in connection!\n");
+    perror("An error occurred in connection");
     exit(1);
   }
 
   /* Sending a request message */
   sprintf(msg, "NEW %d %s %s\n", (*serv)->node_key, (*serv)->node_IP, (*serv)->node_TCPs );
   if(write(fd, msg, strlen(msg)) == -1)/*error*/{
-    perror("Error occurred in writting!\n");
+    perror("Error occurred in writting");
     exit(1);
   }
   printf("Message to be sent: %s\n", msg);
@@ -341,7 +341,7 @@ int tcpS(server** serv, fd_set rfds) {
 
     addrlen = sizeof(addr);
     if((newfd = accept(fd, (struct sockaddr*)&addr, &addrlen)) == -1) {
-      perror("An error occurred on accept() function!\n");
+      perror("An error occurred on accept() function");
       exit(1);
     }
     printf("New connection %s:%d with fd: %d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), newfd);
@@ -350,7 +350,7 @@ int tcpS(server** serv, fd_set rfds) {
 
       if((n = read(newfd, buffer, 128))!=0){
         if(n == -1) {
-          perror("An error occurred on read() function!\n");
+          perror("An error occurred on read() function");
           exit(1);
         }
 
@@ -445,7 +445,7 @@ int tcpC (server** serv, fd_set rfds) {
 
   if((*serv)->fd_tcpC != -1 && FD_ISSET((*serv)->fd_tcpC, &rfds)){
     if(read((*serv)->fd_tcpC, buffer, 128) == -1){
-      perror("Not reading!\n");
+      perror("Not reading!");
       exit(1);
     }
     else{
@@ -463,9 +463,9 @@ int tcpC (server** serv, fd_set rfds) {
       }
 
       else if (strcmp(first, "NEW") == 0) {
-        close((*serv)->fd_tcpC);
+        /*close((*serv)->fd_tcpC);
         if(((*serv)->fd_tcpC=socket(AF_INET,SOCK_STREAM,0)) == -1){
-          perror("An error occurred on socket() function!\n");
+          perror("An error occurred on socket() function");
           exit(1);
         }
         (*serv)->succ_key = key;
@@ -473,9 +473,8 @@ int tcpC (server** serv, fd_set rfds) {
         strcmp((*serv)->succ_IP, ip);
 
         (*serv)->succ_TCP = realloc((*serv)->succ_TCP, (strlen(port)+1) * sizeof(char));
-        strcmp((*serv)->succ_TCP, port);
+        strcmp((*serv)->succ_TCP, port);*/
       }
-
     }
   }
   return (*serv)->fd_tcpC;
