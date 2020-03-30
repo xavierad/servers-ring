@@ -35,6 +35,8 @@
 
 int main(int argc, char *argv[]) {
 
+  int f = 1; /* flag to print out "\n >" in the while loop*/
+
   /* Command variables */
   char cmd[255] = {'\0'}; /* string that receives commands */
   char *token = NULL; /* auxiliary string that receives cmd splitted, takes all its arguments */
@@ -96,8 +98,10 @@ int main(int argc, char *argv[]) {
 
     memset(cmd, '\0', sizeof(cmd)); /* setting all values of cmd */
 
-    printf("\n > ");
+    if(f) printf("\n > ");
 	  fflush(stdout);
+
+    f = 0;
 
     FD_ZERO(&readfds);          /* initialize the fd set */
     FD_SET(0, &readfds);        /* add stdin fd (0) */
@@ -153,9 +157,9 @@ int main(int argc, char *argv[]) {
 
       else if(strncmp(token, "sentry", 5) == 0){
 
-        if(!left || entry) printf("You cannot do a sentry command!\n");
+        if(serv == NULL) printf("No ring created!\n");
+        else if(!left || entry) printf("You cannot do a sentry command!\n");
         else if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'sentry <i> <succi> <succi.IP> <succi.TCP>'?\n");
-        else if(serv == NULL) printf("No ring created!\n");
         else {
 
           /* entry server stuff here */
@@ -211,6 +215,7 @@ int main(int argc, char *argv[]) {
 
       else printf("Command not found!\n");
 
+      f = 1;
       continue;
     }// if FD_ISSET
 
@@ -219,6 +224,8 @@ int main(int argc, char *argv[]) {
       tcpS_recv(&serv, readfds);
       afd = tcpS(&serv, readfds);
       tcpC(&serv, readfds);
+
+      f = 1;
     }
   }// while cmd not equal to exit
 

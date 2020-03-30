@@ -118,22 +118,30 @@ server* newr(int i, char* ip, char* port)
 
   /* info assignement, -1 or NULL means empty */
   serv->node_key = i;
-  serv->node_IP = ip;
-  serv->node_TCPs = port;
+  serv->node_IP = (char *) malloc((strlen(ip) + 1) * sizeof(char));
+  serv->node_TCPs = (char *) malloc((strlen(port) + 1) * sizeof(char));
+  strcpy(serv->node_IP, ip);
+  strcpy(serv->node_TCPs, port);
 //  serv->node_TCPc = NULL;
   serv->node_UDP = NULL;
 
   serv->succ_key = i;
-  serv->succ_IP = ip;
-  serv->succ_TCP = port;
+  serv->succ_IP = (char *) malloc((strlen(ip) + 1) * sizeof(char));
+  serv->succ_TCP = (char *) malloc((strlen(port) + 1) * sizeof(char));
+  strcpy(serv->succ_IP, ip);
+  strcpy(serv->succ_TCP, port);
 
   serv->succ2_key = i;
-  serv->succ2_IP = ip;
-  serv->succ2_TCP = port;
+  serv->succ2_IP = (char *) malloc((strlen(ip) + 1) * sizeof(char));
+  serv->succ2_TCP = (char *) malloc((strlen(port) + 1) * sizeof(char));
+  strcpy(serv->succ2_IP, ip);
+  strcpy(serv->succ2_TCP, port);
 
   serv->fd_pred = -1;
-  serv->pred_IP = ip;
-  serv->pred_TCP = port;
+  serv->pred_IP = (char *) malloc((strlen(ip) + 1) * sizeof(char));
+  serv->pred_TCP = (char *) malloc((strlen(port) + 1) * sizeof(char));
+  strcpy(serv->pred_IP, ip);
+  strcpy(serv->pred_TCP, port);
 
 
   return serv;
@@ -195,10 +203,10 @@ int update_state(server** serv, int key, int succ_key, char* succ_IP, char* succ
   if((*serv)->node_key == key) {
     (*serv)->succ_IP = realloc((*serv)->succ_IP, (strlen(succ_IP)+1) * sizeof(char));
     (*serv)->succ_TCP = realloc((*serv)->succ_TCP, (strlen(succ_TCP)+1) * sizeof(char));
-
     (*serv)->succ_key = succ_key;
     strcpy((*serv)->succ_IP, succ_IP);
     strcpy((*serv)->succ_TCP, succ_TCP);
+
 
     return 1;
   }
