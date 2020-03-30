@@ -223,7 +223,7 @@ int main(int argc, char *argv[]) {
       printf("\n");
       tcpS_recv(&serv, readfds);
       afd = tcpS(&serv, readfds);
-      tcpC(&serv, readfds);
+      fd_tcpC= tcpC(&serv, readfds);
 
       f = 1;
     }

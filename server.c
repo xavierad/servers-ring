@@ -437,7 +437,7 @@ void tcpS_recv(server **serv, fd_set rfds){
 
 
 
-void tcpC (server** serv, fd_set rfds) {
+int tcpC (server** serv, fd_set rfds) {
 
   char buffer[128] = {'\0'};
   char first[128], ip[128], port[128];
@@ -453,7 +453,7 @@ void tcpC (server** serv, fd_set rfds) {
       sscanf(buffer, "%s %d %s %s", first, &key, ip, port);
 
       /* Save my 2nd succesor info */
-      if (strcmp(first, "SUCC")){
+      if (strcmp(first, "SUCC") == 0){
         (*serv)->succ2_key = key;
         (*serv)->succ2_IP = realloc((*serv)->succ2_IP, (strlen(ip)+1) * sizeof(char));
         strcmp((*serv)->succ2_IP, ip);
@@ -462,8 +462,21 @@ void tcpC (server** serv, fd_set rfds) {
         strcmp((*serv)->succ2_TCP, port);
       }
 
-      //if (strcmp(first, "NEW")) sscanf(buffer, "%s %d %s %s", )
+      else if (strcmp(first, "NEW") == 0) {
+        close((*serv)->fd_tcpC);
+        if(((*serv)->fd_tcpC=socket(AF_INET,SOCK_STREAM,0)) == -1){
+          perror("An error occurred on socket() function!\n");
+          exit(1);
+        }
+        (*serv)->succ_key = key;
+        (*serv)->succ_IP = realloc((*serv)->succ_IP, (strlen(ip)+1) * sizeof(char));
+        strcmp((*serv)->succ_IP, ip);
+
+        (*serv)->succ_TCP = realloc((*serv)->succ_TCP, (strlen(port)+1) * sizeof(char));
+        strcmp((*serv)->succ_TCP, port);
+      }
 
     }
   }
+  return (*serv)->fd_tcpC;
 }

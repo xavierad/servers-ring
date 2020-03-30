@@ -27,7 +27,7 @@ int tcpS(server** serv, fd_set rfds);
 
 void tcpS_recv(server** serv, fd_set rfds);
 
-void tcpC(server** serv, fd_set rfds);
+int tcpC(server** serv, fd_set rfds);
 
 
 
