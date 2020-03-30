@@ -130,10 +130,14 @@ int main(int argc, char *argv[]) {
         else if(serv != NULL) printf("Cannot create a new ring!\n");
         else
         {
-          /* ring creation stuff here */
+          /* Ring creation stuff here */
           serv = newr(atoi(args[1]), ip, port); /* new ring/server creation */
-          printf("A new ring has been created!\n");
+
+          /* Init TCP sessions */
           init_tcp_server(port, &serv, fd_parent); /* The TCP server initialized */
+          fd_tcpC = init_tcp_client(&serv, &readfds, "NEW"); /* TCP session with succ (with myself), I'm also client */
+
+          printf("A new ring has been created!\n");
         }
         free(args);
       }
@@ -165,9 +169,8 @@ int main(int argc, char *argv[]) {
           /* entry server stuff here */
           if(!update_state(&serv, atoi(args[1]), atoi(args[2]), args[3], args[4])) printf("Key <i> is not the local!\n");
           else{
-            /* TCP session with succ, I'm client */
-            fd_tcpC = init_tcp_client(&serv, &readfds);
-
+            /* TCP session with known successor */
+            fd_tcpC = init_tcp_client(&serv, &readfds, "NEW");
             printf("The new server has entered!\n");
             entry = 1;
             left = 0;

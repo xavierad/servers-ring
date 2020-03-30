@@ -21,7 +21,7 @@ int init_fd_parent();
 
 void init_tcp_server(char* port, server** serv, int fd);
 
-int init_tcp_client(server** serv, fd_set* rfds);
+int init_tcp_client(server** serv, fd_set* rfds, char *mode);
 
 int tcpS(server** serv, fd_set rfds);
 
