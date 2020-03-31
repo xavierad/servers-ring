@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
           /* Init TCP sessions */
           init_tcp_server(port, &serv, fd_parent); /* The TCP server initialized */
           fd_tcpC = init_tcp_client(&serv, &readfds, "NEW"); /* TCP session with succ (with myself), I'm also client */
-
+          
           printf("A new ring has been created!\n");
         }
         free(args);
@@ -224,8 +224,8 @@ int main(int argc, char *argv[]) {
 
     if(serv != NULL) {
       printf("\n");
-      tcpS_recv(&serv, readfds);
       afd = tcpS(&serv, readfds);
+      tcpS_recv(&serv, readfds);
       fd_tcpC= tcpC(&serv, readfds);
 
       f = 1;
