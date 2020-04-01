@@ -5,7 +5,8 @@
 */
 
 /******************************** DÚVIDAS ********************************
-1-
+1- A aplicação deve aceitar o comando exit sem que se tenha feito leave ?
+2-
 ****************************************************************************/
 
 
@@ -49,7 +50,7 @@ int main(int argc, char *argv[]) {
   int left = 1;
   int entry = 0;
 
-  int maxfd, fd_parent, afd=0, fd_tcpC=0;
+  int maxfd, fd_parent, fd_pred=0, fd_tcpC=0;
   fd_set readfds;
 
   /* validating the initiating command: ./dkt <ip> <port> */
@@ -94,7 +95,7 @@ int main(int argc, char *argv[]) {
   maxfd = fd_parent;
 
   /* application loop */
-  while(strcmp(cmd, "exit\n") != 0){
+  while(strcmp(cmd, "exit\n") != 0 || left != 1){
 
     memset(cmd, '\0', sizeof(cmd)); /* setting all values of cmd */
 
@@ -106,8 +107,8 @@ int main(int argc, char *argv[]) {
     FD_ZERO(&readfds);          /* initialize the fd set */
     FD_SET(0, &readfds);        /* add stdin fd (0) */
     FD_SET(fd_parent, &readfds);
-    FD_SET(afd, &readfds);
-    maxfd=max(maxfd,afd);
+    FD_SET(fd_pred, &readfds);
+    maxfd=max(maxfd,fd_pred);
 
     FD_SET(fd_tcpC, &readfds);
     maxfd=max(maxfd,fd_tcpC);
@@ -186,7 +187,9 @@ int main(int argc, char *argv[]) {
 
           // fazer mais
           leave(&serv);
-          freeServer(&serv);
+          fd_pred = 0;
+          fd_tcpC = 0;
+          //freeServer(&serv);
           printf("Server left!\n");
           left = 1;
           entry = 0;
@@ -214,7 +217,9 @@ int main(int argc, char *argv[]) {
         free(args);
       }
 
-      else if(strcmp(token, "exit\n") == 0) printf("You closed the application!\n\n");
+      else if(strcmp(token, "exit\n") == 0 && left == 1) printf("You closed the application!\n\n");
+
+      else if(strcmp(token, "exit\n") == 0 && left == 0) printf("You must leave the ring first!\n");
 
       else printf("Command not found!\n");
 
@@ -225,7 +230,7 @@ int main(int argc, char *argv[]) {
     if(serv != NULL) {
       printf("\n");
       tcpS_recv(&serv, readfds);
-      afd = tcpS(&serv, readfds);
+      fd_pred = tcpS(&serv, readfds);
       fd_tcpC= tcpC(&serv, readfds);
 
       f = 1;

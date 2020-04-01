@@ -28,22 +28,14 @@ Faz pedidos ao seu sucessor.
 struct _server
 {
 
-  int *fd;// talvez apagar se usar apenas fd_pred
-
   /* My client and server sockets */
   int fd_tcpS;
   int fd_tcpC; /* this is to get into a ring (sentry, entry) */
-/*
-  int fd_tcpC1;
-  int fd_tcpC2;
-  int fd_udpS;
-  int fd_udpC;*/
 
   /* server state */
   int node_key;
   char *node_IP;
   char *node_TCPs;
-  //char *node_TCPc;
   char *node_UDP;
 
   int succ_key;
@@ -85,7 +77,7 @@ void freeServer(server** serv)
 
   if((*serv) != NULL)
   {
-    if((*serv)->fd != NULL) free((*serv)->fd);
+    //if((*serv)->fd != NULL) free((*serv)->fd);
     if((*serv)->succ_IP != NULL) free((*serv)->succ_IP);
     if((*serv)->succ_TCP != NULL) free((*serv)->succ_TCP);
     free(*serv);
@@ -188,10 +180,33 @@ void showState(server* serv)
 void leave(server** serv)
 {
 
-  int i;
-  int length = sizeof((*serv)->fd) / sizeof(int);
+  printf("Leave: closing TCP sessions and resetting the state ...\n");
 
-  //for(i = 0; i < length; i++) //close((*serv)->fd[i]);
+  close((*serv)->fd_tcpC);
+  close((*serv)->fd_pred);
+  printf("fd_pred %d\n", (*serv)->fd_pred);
+
+  /* Resetting the successor */
+  (*serv)->succ_IP = realloc((*serv)->succ_IP, (strlen((*serv)->node_IP)+1) * sizeof(char));
+  (*serv)->succ_TCP = realloc((*serv)->succ_TCP, (strlen((*serv)->node_TCPs)+1) * sizeof(char));
+  (*serv)->succ_key = (*serv)->node_key;
+  strcpy((*serv)->succ_IP, (*serv)->node_IP);
+  strcpy((*serv)->succ_TCP, (*serv)->node_TCPs);
+
+  /* Resetting the 2nd successor */
+  (*serv)->succ2_IP = realloc((*serv)->succ_IP, (strlen((*serv)->node_IP)+1) * sizeof(char));
+  (*serv)->succ2_TCP = realloc((*serv)->succ_TCP, (strlen((*serv)->node_TCPs)+1) * sizeof(char));
+  (*serv)->succ2_key = (*serv)->node_key;
+  strcpy((*serv)->succ2_IP, (*serv)->node_IP);
+  strcpy((*serv)->succ2_TCP, (*serv)->node_TCPs);
+
+  /* Resetting the predecessor */
+  (*serv)->fd_pred = -1;
+  (*serv)->pred_IP = realloc((*serv)->pred_IP, (strlen((*serv)->node_IP)+1) * sizeof(char));
+  (*serv)->succ_TCP = realloc((*serv)->pred_TCP, (strlen((*serv)->node_TCPs)+1) * sizeof(char));
+  strcpy((*serv)->succ_IP, (*serv)->node_IP);
+  strcpy((*serv)->succ_TCP, (*serv)->node_TCPs);
+
 }
 
 
@@ -235,6 +250,7 @@ int init_fd_parent () {
 *******************************************************************************/
 void init_tcp_server(char *port, server **serv, int fd) {
 
+  printf("Initiating TCP server ...\n");
   struct addrinfo hints,*res;
 
   memset(&hints, 0, sizeof hints);
@@ -271,11 +287,13 @@ void init_tcp_server(char *port, server **serv, int fd) {
 
 
 /*******************************************************************************
- * create_tcp_client(server *serv) - creates  a tcp client
+ * create_tcp_client(server *serv) - creates  a TCP client
  *
  * returns: fd of the created socket
 *******************************************************************************/
 int init_tcp_client(server** serv, fd_set *rfds, char *mode) {
+
+  printf("Initiating TCP client ...\n");
 
   struct addrinfo hints, *res;
   ssize_t nbytes, nleft, nwritten, nread;
@@ -323,7 +341,7 @@ int init_tcp_client(server** serv, fd_set *rfds, char *mode) {
        perror("Error occurred in writting");
        exit(1);
     }
-    printf("Message to be sent: %s\n", msg);
+    printf("Message to be sent (about my successor): %s\n", msg);
 
     sprintf(msg, "SUCCCONF\n");
     if(write(fd, msg, strlen(msg)) == -1)/*error*/{
@@ -383,28 +401,33 @@ int tcpS(server** serv, fd_set rfds) {
 
         /* SENTRY - write server response in newfd, info about server succ */
         sprintf(resp, "SUCC %d %s %s\n", (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP);
-        printf("To send as response: %s\n", resp);
+        printf("To send as response (about my sucessor): %s\n", resp);
         write(newfd, resp, strlen(resp));
 
         /* SENTRY - write to predecessor about the new server's client*/
         if((*serv)->fd_pred == -1) printf("Server had no predecessor, no message sent to its old predecessor\n");
         else {
           sprintf(resp, "NEW %d %s %s\n", key, ip, port);
-          printf("\nTo send to my old predecessor (about my new predecessor): %s\n", resp);
+          printf("To send to my old predecessor (about my new predecessor): %s\n", resp);
           write((*serv)->fd_pred, resp, strlen(resp));
           printf("Closing the session with old predecessor...\n");
           close((*serv)->fd_pred);
         }
       }
+      //else { /* else in case the server has a tcp sesssion with himself */
+      /*printf("Closing the session with old predecessor...\n");
+        if((*serv)->fd_pred != -1) close((*serv)->fd_pred);
+      }*()
 
       /* SENTRY - Save new client (predecessor) stuff here (and succesor's ?) */
       (*serv)->pred_IP = (char *) realloc((*serv)->pred_IP, (strlen(ip)+1) * sizeof(char));
       (*serv)->pred_TCP = (char *) realloc((*serv)->pred_TCP, (strlen(port)+1) * sizeof(char));
       strcpy((*serv)->pred_IP, ip);
       strcpy((*serv)->pred_TCP, port);
+
       (*serv)->fd_pred = newfd;
       printf("fd_pred %d\n", (*serv)->fd_pred);
-
+      
       return newfd;
     }
   }
