@@ -27,30 +27,31 @@ Faz pedidos ao seu sucessor.
 
 struct _server
 {
-
   /* My client and server sockets */
-  int fd_tcpS;
-  int fd_tcpC; /* this is to get into a ring (sentry, entry) */
+  int fd_tcpS; // this to listen to clients
+  int fd_tcpC; // this is to get into a ring (sentry, entry)
 
-  /* server state */
-  int node_key;
-  char *node_IP;
-  char *node_TCPs;
-  char *node_UDP;
+  /* Server state */
+  /* the local */
+  int node_key;    // node's key
+  char *node_IP;   // node's ip
+  char *node_TCPs; // node's port
+//  char *node_UDP;
 
-  int succ_key;
-  char *succ_IP;
-  char *succ_TCP;
+  /* the successor */
+  int succ_key;   // successor's key
+  char *succ_IP;  // successor's ip
+  char *succ_TCP; // successor's port
 
-  int succ2_key;
-  char *succ2_IP;
-  char *succ2_TCP;
+  /* the 2nd successor */
+  int succ2_key;   // 2nd successor's key
+  char *succ2_IP;  // 2nd successor's ip
+  char *succ2_TCP; // 2nd successor's port
 
-  //acho que dá jeito para certas mensagens - a verificar
-  int fd_pred;
-  char *pred_IP;
-  char *pred_TCP;
-
+  /* the predecessor */
+  int fd_pred;    // predecessor's socket, to send messages when when appropriated
+  char *pred_IP;  // predecessor's ip
+  char *pred_TCP; // predecessor's port
 
 };
 
@@ -105,17 +106,16 @@ server* newr(int i, char* ip, char* port)
   }
 
 
+  /* Default info assignement, -1 or NULL means empty */
   serv->fd_tcpS = -1;
   serv->fd_tcpC = -1;
 
-  /* info assignement, -1 or NULL means empty */
   serv->node_key = i;
   serv->node_IP = (char *) malloc((strlen(ip) + 1) * sizeof(char));
   serv->node_TCPs = (char *) malloc((strlen(port) + 1) * sizeof(char));
   strcpy(serv->node_IP, ip);
   strcpy(serv->node_TCPs, port);
-//  serv->node_TCPc = NULL;
-  serv->node_UDP = NULL;
+  //serv->node_UDP = NULL;
 
   serv->succ_key = i;
   serv->succ_IP = (char *) malloc((strlen(ip) + 1) * sizeof(char));
@@ -174,19 +174,18 @@ void showState(server* serv)
  * leave(server* )
  *
  * Description: leaves the ring, closes the TCP sessions with predecessor and
-                 sucessor
+                 sucessor and resets the local's state
  * returns: void
 *******************************************************************************/
 void leave(server** serv)
 {
 
-  printf("Leave: closing TCP sessions and resetting the state ...\n");
+  printf("Leaving (closing TCP sessions and resetting the state) ...\n");
 
-  close((*serv)->fd_tcpC);
-  close((*serv)->fd_pred);
-  printf("fd_pred %d\n", (*serv)->fd_pred);
+  close((*serv)->fd_tcpC); // closing TCP session with successor (server)
+  close((*serv)->fd_pred); // closing TCP session with predecessor (client)
 
-  /* Resetting the successor */
+  /* Resetting the successor: the default (see newr() function) */
   (*serv)->succ_IP = realloc((*serv)->succ_IP, (strlen((*serv)->node_IP)+1) * sizeof(char));
   (*serv)->succ_TCP = realloc((*serv)->succ_TCP, (strlen((*serv)->node_TCPs)+1) * sizeof(char));
   (*serv)->succ_key = (*serv)->node_key;
@@ -210,7 +209,14 @@ void leave(server** serv)
 }
 
 
-
+/*******************************************************************************
+ * update_state(server*, int, int, char*, char* )
+ *
+ * Description: Updates info state about the correspondent successor
+ *
+ * returns: 1 if well succeed
+            0 otherwise
+*******************************************************************************/
 // mudar talvez alguns argumentos, pred e/ou ssucc
 int update_state(server** serv, int key, int succ_key, char* succ_IP, char* succ_TCP) {
 
@@ -229,6 +235,13 @@ int update_state(server** serv, int key, int succ_key, char* succ_IP, char* succ
 }
 
 
+/*******************************************************************************
+ * init_fd_parent()
+ *
+ * Description: creates a TCP file descriptor
+ *
+ * returns: returns an integer, the file descriptor created
+*******************************************************************************/
 int init_fd_parent () {
 
   int fd;
@@ -243,14 +256,16 @@ int init_fd_parent () {
 
 
 /*******************************************************************************
- * init_tcp_server(char *port) - "opens" a tcp server
- *                                       -> waiting from connect from client
+ * init_tcp_server(char* , server** ,int )
  *
- * returns: fd of the created socket
+ * Description: opens a TCP server with socket fd
+ *
+ * returns: void
 *******************************************************************************/
 void init_tcp_server(char *port, server **serv, int fd) {
 
   printf("Initiating TCP server ...\n");
+
   struct addrinfo hints,*res;
 
   memset(&hints, 0, sizeof hints);
@@ -258,12 +273,7 @@ void init_tcp_server(char *port, server **serv, int fd) {
   hints.ai_socktype=SOCK_STREAM;//TCP socket
   hints.ai_flags=AI_PASSIVE;
 
-  /* max_clients: server's predecessor is its client and there can be a new client (sentry, entry) */
-  //int max_clients = 2;
   int errcode;
-
-  /*(*serv)->fd = (int*) malloc((max_clients+1) * sizeof(int));
-  (*serv)->fd[max_clients] = -1;*/
 
   /* Saving the server's fd */
   (*serv)->fd_tcpS = fd;
@@ -287,7 +297,10 @@ void init_tcp_server(char *port, server **serv, int fd) {
 
 
 /*******************************************************************************
- * create_tcp_client(server *serv) - creates  a TCP client
+ * create_tcp_client(server** , fd_set* , char* )
+ *
+ * Description: creates a TCP client, sends request messages for different
+                 purposes
  *
  * returns: fd of the created socket
 *******************************************************************************/
@@ -301,19 +314,14 @@ int init_tcp_client(server** serv, fd_set *rfds, char *mode) {
   int fd, n;
   char msg[128], buffer[128];
 
-  if((fd=socket(AF_INET,SOCK_STREAM,0)) == -1){
-    perror("An error occurred on socket() function");
-    exit(1);
-  }
+  fd = init_fd_parent();
+  (*serv)->fd_tcpC = fd; // Saving my fd in order to get its value in tcpC and set it to rfds
 
   memset(&hints, 0, sizeof hints);
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
 
-  /* Saving my fd in order to get its value in tcpC and set it to rfds */
-  (*serv)->fd_tcpC = fd;
-
-  /* Connection with 2nd successor */
+  /* Connection with 2nd successor, in case the successor do LEAVE */
   if(strcmp(mode, "SUCCCONF") == 0){
     /* Conneting to server */
     if(getaddrinfo((*serv)->succ2_IP, (*serv)->succ2_TCP, &hints, &res) != 0){
@@ -333,10 +341,8 @@ int init_tcp_client(server** serv, fd_set *rfds, char *mode) {
     }
     printf("Message to be sent to old 2nd successor (new successor): %s\n", msg);
 
-    printf("pred %d\n", (*serv)->fd_pred);
-
     /* Message to be sent to predecessor (about the new successor) */
-    if((*serv)->fd_pred == -1) { /* it occurs only when I got alone, when I have known also my predecessor closed (see tcpS_recv)*/
+    if((*serv)->fd_pred == -1) { /* it occurs only when I got alone, when I have known that also my predecessor closed (see tcpS_recv)*/
       sprintf(msg, "SUCC %d %s %s\n", (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP );
       if(write(fd, msg, strlen(msg)) == -1) {
          perror("Error occurred in writting");
@@ -354,7 +360,7 @@ int init_tcp_client(server** serv, fd_set *rfds, char *mode) {
       printf("Message to be sent to predecessor (about new successor): %s\n", msg);
     }
   }
-  /* Else: the procedure is the normal */
+  /* Else: connect to successor, in case of SENTRY */
   else {
     /* Conneting to server */
     if(getaddrinfo((*serv)->succ_IP, (*serv)->succ_TCP, &hints, &res) != 0){
@@ -366,9 +372,9 @@ int init_tcp_client(server** serv, fd_set *rfds, char *mode) {
       exit(1);
     }
 
-    if( strcmp( mode, "NEW") == 0)
-    {
-      /* Sending a request message */
+    /* if the purpose is to send a <NEW> type message */
+    if(strcmp(mode, "NEW") == 0) {
+      /* Sending a request message to new sucessor */
       sprintf(msg, "NEW %d %s %s\n", (*serv)->node_key, (*serv)->node_IP, (*serv)->node_TCPs );
       if(write(fd, msg, strlen(msg)) == -1)/*error*/{
          perror("Error occurred in writting");
@@ -377,8 +383,9 @@ int init_tcp_client(server** serv, fd_set *rfds, char *mode) {
       printf("Message to be sent to new successor: %s\n", msg);
 
     }
-    else if(strcmp(mode, "SUCC") == 0)
-    {
+    /* else if the purpose is to send a <SUCC> type message */
+    else if(strcmp(mode, "SUCC") == 0) {
+      /* Sending a info message about new sucessor to predecessor */
       sprintf(msg, "SUCC %d %s %s\n", (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP );
       if(write((*serv)->fd_pred, msg, strlen(msg)) == -1)/*error*/{
          perror("Error occurred in writting");
@@ -386,6 +393,7 @@ int init_tcp_client(server** serv, fd_set *rfds, char *mode) {
       }
       printf("Message to be sent to predecessor (about my successor): %s\n", msg);
 
+      /* And send a confirmation message to new successor */
       sprintf(msg, "SUCCCONF\n");
       if(write(fd, msg, strlen(msg)) == -1)/*error*/{
          perror("Error occurred in writting");
@@ -395,12 +403,19 @@ int init_tcp_client(server** serv, fd_set *rfds, char *mode) {
     }
   }
 
-
-
   return fd;
 }
 
 
+/*******************************************************************************
+ * tcpS(server** , fd_set )
+ *
+ * Description: Listens to new connections (new predecessors), accept them, save
+                 their info about and send various types of messages
+ *
+ * returns: file descriptor of new client (predecessor),
+            0 in case there is no new connection
+*******************************************************************************/
 int tcpS(server** serv, fd_set rfds) {
 
   int fd = (*serv)->fd_tcpS;
@@ -409,10 +424,11 @@ int tcpS(server** serv, fd_set rfds) {
   ssize_t n, nw;
   struct sockaddr_in addr; socklen_t addrlen;
 
+  /* auxiliary variables for scanning the buffer (sscanf) */
   int key;
   char ip[20], port[20], first[20];
-  int i;
 
+  /* if the purpose of the message is for SENTRY */
   int isSentry = 0;
 
 
@@ -431,6 +447,7 @@ int tcpS(server** serv, fd_set rfds) {
         exit(1);
       }
 
+      /* Reading the buffer until the '\n' character */
       for (int i = 0; i < strlen(buffer); i++) {
         if(buffer[i] == '\n' && i < (strlen(buffer) - 1)) {
           buffer[i+1] = '\0';
@@ -452,7 +469,7 @@ int tcpS(server** serv, fd_set rfds) {
         printf("To send as response (about successor): %s\n", resp);
         write(newfd, resp, strlen(resp));
 
-        /* SENTRY - write to predecessor about the new server's client*/
+        /* SENTRY - write to predecessor about the new server's client, close TCP session*/
         if((*serv)->fd_pred == -1) printf("Server had no predecessor, no message sent to its old predecessor\n");
         else {
           sprintf(resp, "NEW %d %s %s\n", key, ip, port);
@@ -471,14 +488,13 @@ int tcpS(server** serv, fd_set rfds) {
         }
       }
 
-      /* SENTRY - Save new client (predecessor) stuff here (and succesor's ?) */
+      /* SENTRY - Saving new client (predecessor) stuff here */
       (*serv)->pred_IP = (char *) realloc((*serv)->pred_IP, (strlen(ip)+1) * sizeof(char));
       (*serv)->pred_TCP = (char *) realloc((*serv)->pred_TCP, (strlen(port)+1) * sizeof(char));
       strcpy((*serv)->pred_IP, ip);
       strcpy((*serv)->pred_TCP, port);
 
       (*serv)->fd_pred = newfd;
-      printf("fd_pred %d\n", (*serv)->fd_pred);
 
       return newfd;
     }
@@ -487,6 +503,13 @@ int tcpS(server** serv, fd_set rfds) {
 }
 
 
+/*******************************************************************************
+ * tcpS_recv(server** , fd_set )
+ *
+ * Description: Reads messages from usual clients (predecessors)
+ *
+ * returns: void
+*******************************************************************************/
 void tcpS_recv(server **serv, fd_set rfds){
 
   char buffer[128];
@@ -521,12 +544,23 @@ void tcpS_recv(server **serv, fd_set rfds){
 
 
 
+/*******************************************************************************
+ * tcpC(server** , fd_set )
+ *
+ * Description: Reads message from server when there are changes in the ring,
+                and ......
+ *
+ * returns: fd of the created socket
+*******************************************************************************/
 int tcpC (server** serv, fd_set rfds) {
 
   char buffer[128] = {'\0'};
+
+  /* auxiliary variables, for scanning the buffer (sscanf) */
   char first[128], ip[128], port[128];
   int key, n;
 
+  /* fd_tcpC cannot be -1  ACHO QUE SE PODE TIRAR O fd_tcpC != -1  !!!!!*/
   if((*serv)->fd_tcpC != -1 && FD_ISSET((*serv)->fd_tcpC, &rfds)){
     printf("Aqui tcpC!\n");
     if((n = read((*serv)->fd_tcpC, buffer, 128)) != 0){
@@ -551,7 +585,7 @@ int tcpC (server** serv, fd_set rfds) {
         else if (strcmp(first, "NEW") == 0) {
           close((*serv)->fd_tcpC);
 
-          /* Save my old successor to 2nd successor */
+          /* Save first my old successor to 2nd successor */
           (*serv)->succ2_key = (*serv)->succ_key;
           (*serv)->succ2_IP = realloc((*serv)->succ2_IP, (strlen((*serv)->succ_IP)+1) * sizeof(char));
           strcpy((*serv)->succ2_IP, (*serv)->succ_IP);
