@@ -386,8 +386,7 @@ int tcpS(server** serv, fd_set rfds) {
         printf("To send as response: %s\n", resp);
         write(newfd, resp, strlen(resp));
 
-
-        /* SENTRY - write to server predecessor about the new server's client*/
+        /* SENTRY - write to predecessor about the new server's client*/
         if((*serv)->fd_pred == -1) printf("Server had no predecessor, no message sent to its old predecessor\n");
         else {
           sprintf(resp, "NEW %d %s %s\n", key, ip, port);
@@ -469,10 +468,10 @@ int tcpC (server** serv, fd_set rfds) {
         if (strcmp(first, "SUCC") == 0){
           (*serv)->succ2_key = key;
           (*serv)->succ2_IP = realloc((*serv)->succ2_IP, (strlen(ip)+1) * sizeof(char));
-          strcmp((*serv)->succ2_IP, ip);
+          strcpy((*serv)->succ2_IP, ip);
 
           (*serv)->succ2_TCP = realloc((*serv)->succ2_TCP, (strlen(port)+1) * sizeof(char));
-          strcmp((*serv)->succ2_TCP, port);
+          strcpy((*serv)->succ2_TCP, port);
         }
 
         else if (strcmp(first, "NEW") == 0) {
@@ -481,16 +480,16 @@ int tcpC (server** serv, fd_set rfds) {
           /* Save my old successor to 2nd successor */
           (*serv)->succ2_key = (*serv)->succ_key;
           (*serv)->succ2_IP = realloc((*serv)->succ2_IP, (strlen((*serv)->succ_IP)+1) * sizeof(char));
-          strcmp((*serv)->succ2_IP, (*serv)->succ_IP);
+          strcpy((*serv)->succ2_IP, (*serv)->succ_IP);
           (*serv)->succ2_TCP = realloc((*serv)->succ2_TCP, (strlen((*serv)->succ_TCP)+1) * sizeof(char));
-          strcmp((*serv)->succ2_TCP, (*serv)->succ_TCP);
+          strcpy((*serv)->succ2_TCP, (*serv)->succ_TCP);
 
           /* Save my new successor */
           (*serv)->succ_key = key;
           (*serv)->succ_IP = realloc((*serv)->succ_IP, (strlen(ip)+1) * sizeof(char));
-          strcmp((*serv)->succ_IP, ip);
+          strcpy((*serv)->succ_IP, ip);
           (*serv)->succ_TCP = realloc((*serv)->succ_TCP, (strlen(port)+1) * sizeof(char));
-          strcmp((*serv)->succ_TCP, port);
+          strcpy((*serv)->succ_TCP, port);
 
           (*serv)->fd_tcpC = init_tcp_client(&(*serv), &rfds, "SUCC");
           printf("fd_tcpc: %d\n", (*serv)->fd_tcpC);
