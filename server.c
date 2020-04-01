@@ -344,6 +344,7 @@ int init_tcp_client(server** serv, fd_set *rfds, char *mode) {
       }
       printf("Message to be sent to predecessor (about new successor): %s\n", msg);
     }
+
     else {
       sprintf(msg, "SUCC %d %s %s\n", (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP );
       if(write((*serv)->fd_pred, msg, strlen(msg)) == -1) {
@@ -574,8 +575,8 @@ int tcpC (server** serv, fd_set rfds) {
       printf("Successor (key %d) closed TCP session!\n", (*serv)->succ_key);
       close((*serv)->fd_tcpC);
 
-      /* Save my new successor */
-      (*serv)->succ_key = key;
+      /* Save old 2nd successor to my new successor */
+      (*serv)->succ_key = (*serv)->succ2_key;
       (*serv)->succ_IP = realloc((*serv)->succ_IP, (strlen((*serv)->succ2_IP)+1) * sizeof(char));
       strcpy((*serv)->succ_IP, (*serv)->succ2_IP);
       (*serv)->succ_TCP = realloc((*serv)->succ_TCP, (strlen((*serv)->succ2_TCP)+1) * sizeof(char));
