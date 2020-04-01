@@ -313,42 +313,85 @@ int init_tcp_client(server** serv, fd_set *rfds, char *mode) {
   /* Saving my fd in order to get its value in tcpC and set it to rfds */
   (*serv)->fd_tcpC = fd;
 
-  /* Conneting to server */
-  if(getaddrinfo((*serv)->succ_IP, (*serv)->succ_TCP, &hints, &res) != 0){
-    perror("An error occurred on getting addresses");
-    exit(1);
-  }
-  if(connect(fd, res->ai_addr,res->ai_addrlen) == -1){
-    perror("An error occurred in connection");
-    exit(1);
-  }
-
-  if( strcmp( mode, "NEW") == 0)
-  {
-    /* Sending a request message */
-    sprintf(msg, "NEW %d %s %s\n", (*serv)->node_key, (*serv)->node_IP, (*serv)->node_TCPs );
-    if(write(fd, msg, strlen(msg)) == -1)/*error*/{
-       perror("Error occurred in writting");
-       exit(1);
+  /* Connection with 2nd successor */
+  if(strcmp(mode, "SUCCCONF") == 0){
+    /* Conneting to server */
+    if(getaddrinfo((*serv)->succ2_IP, (*serv)->succ2_TCP, &hints, &res) != 0){
+      perror("An error occurred on getting addresses");
+      exit(1);
     }
-    printf("Message to be sent: %s\n", msg);
-
-  }
-  else if(strcmp(mode, "SUCC") == 0)
-  {
-    sprintf(msg, "SUCC %d %s %s\n", (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP );
-    if(write((*serv)->fd_pred, msg, strlen(msg)) == -1)/*error*/{
-       perror("Error occurred in writting");
-       exit(1);
+    if(connect(fd, res->ai_addr,res->ai_addrlen) == -1){
+      perror("An error occurred in connection");
+      exit(1);
     }
-    printf("Message to be sent (about my successor): %s\n", msg);
 
+    /* Message to be sent to 2nd successor (new successor) */
     sprintf(msg, "SUCCCONF\n");
     if(write(fd, msg, strlen(msg)) == -1)/*error*/{
        perror("Error occurred in writting");
        exit(1);
     }
-    printf("Message to be sent: %s\n", msg);
+    printf("Message to be sent to old 2nd successor (new successor): %s\n", msg);
+
+    printf("pred %d\n", (*serv)->fd_pred);
+
+    /* Message to be sent to predecessor (about the new successor) */
+    if((*serv)->fd_pred == -1) { /* it occurs only when I got alone, when I have known also my predecessor closed (see tcpS_recv)*/
+      sprintf(msg, "SUCC %d %s %s\n", (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP );
+      if(write(fd, msg, strlen(msg)) == -1) {
+         perror("Error occurred in writting");
+         exit(1);
+      }
+      printf("Message to be sent to predecessor (about new successor): %s\n", msg);
+    }
+    else {
+      sprintf(msg, "SUCC %d %s %s\n", (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP );
+      if(write((*serv)->fd_pred, msg, strlen(msg)) == -1) {
+         perror("Error occurred in writting");
+         exit(1);
+      }
+      printf("Message to be sent to predecessor (about new successor): %s\n", msg);
+    }
+  }
+  /* Else: the procedure is the normal */
+  else {
+    /* Conneting to server */
+    if(getaddrinfo((*serv)->succ_IP, (*serv)->succ_TCP, &hints, &res) != 0){
+      perror("An error occurred on getting addresses");
+      exit(1);
+    }
+    if(connect(fd, res->ai_addr,res->ai_addrlen) == -1){
+      perror("An error occurred in connection");
+      exit(1);
+    }
+
+    if( strcmp( mode, "NEW") == 0)
+    {
+      /* Sending a request message */
+      sprintf(msg, "NEW %d %s %s\n", (*serv)->node_key, (*serv)->node_IP, (*serv)->node_TCPs );
+      if(write(fd, msg, strlen(msg)) == -1)/*error*/{
+         perror("Error occurred in writting");
+         exit(1);
+      }
+      printf("Message to be sent to new successor: %s\n", msg);
+
+    }
+    else if(strcmp(mode, "SUCC") == 0)
+    {
+      sprintf(msg, "SUCC %d %s %s\n", (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP );
+      if(write((*serv)->fd_pred, msg, strlen(msg)) == -1)/*error*/{
+         perror("Error occurred in writting");
+         exit(1);
+      }
+      printf("Message to be sent to predecessor (about my successor): %s\n", msg);
+
+      sprintf(msg, "SUCCCONF\n");
+      if(write(fd, msg, strlen(msg)) == -1)/*error*/{
+         perror("Error occurred in writting");
+         exit(1);
+      }
+      printf("Message to be sent: %s\n", msg);
+    }
   }
 
 
@@ -368,6 +411,8 @@ int tcpS(server** serv, fd_set rfds) {
   int key;
   char ip[20], port[20], first[20];
   int i;
+
+  int isSentry = 0;
 
 
   if(FD_ISSET(fd, &rfds)){
@@ -397,27 +442,33 @@ int tcpS(server** serv, fd_set rfds) {
 
       /* SENTRY */
       if(strcmp(buffer, "SUCCCONF\n") != 0){
+        isSentry = 1;
+
         sscanf(buffer, "%s %d %s %s", first, &key, ip, port);
 
         /* SENTRY - write server response in newfd, info about server succ */
         sprintf(resp, "SUCC %d %s %s\n", (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP);
-        printf("To send as response (about my sucessor): %s\n", resp);
+        printf("To send as response (about successor): %s\n", resp);
         write(newfd, resp, strlen(resp));
 
         /* SENTRY - write to predecessor about the new server's client*/
         if((*serv)->fd_pred == -1) printf("Server had no predecessor, no message sent to its old predecessor\n");
         else {
           sprintf(resp, "NEW %d %s %s\n", key, ip, port);
-          printf("To send to my old predecessor (about my new predecessor): %s\n", resp);
+          printf("Message to be sent to old predecessor (about new predecessor): %s\n", resp);
           write((*serv)->fd_pred, resp, strlen(resp));
           printf("Closing the session with old predecessor...\n");
           close((*serv)->fd_pred);
         }
       }
-      //else { /* else in case the server has a tcp sesssion with himself */
-      /*printf("Closing the session with old predecessor...\n");
-        if((*serv)->fd_pred != -1) close((*serv)->fd_pred);
-      }*()
+      else {
+        /* In case the message is not for SENTRY (for LEAVE instead) */
+        if(!isSentry) {
+          sprintf(resp, "SUCC %d %s %s\n", (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP);
+          printf("To send as response (about successor): %s\n", resp);
+          write(newfd, resp, strlen(resp));
+        }
+      }
 
       /* SENTRY - Save new client (predecessor) stuff here (and succesor's ?) */
       (*serv)->pred_IP = (char *) realloc((*serv)->pred_IP, (strlen(ip)+1) * sizeof(char));
@@ -427,7 +478,7 @@ int tcpS(server** serv, fd_set rfds) {
 
       (*serv)->fd_pred = newfd;
       printf("fd_pred %d\n", (*serv)->fd_pred);
-      
+
       return newfd;
     }
   }
@@ -454,13 +505,12 @@ void tcpS_recv(server **serv, fd_set rfds){
       /* Interpretate message here and answer to client if needed*/
 
 
-      /* write server response in afd */
-      //sprintf(resp, "SUCC %d %s %s\n", (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP);
-      //write(afd, resp, strlen(resp));
     }
-    else {
-      printf("Closed!\n");
+    /* If my predecessor ends TCP session */
+    else if (n == 0) {
+      printf("Predecessor closed TCP session!\n");
       close((*serv)->fd_pred);
+      (*serv)->fd_pred = -1;
     }//connection closed by peer
 
     /* Cleaning buffer */
@@ -519,10 +569,21 @@ int tcpC (server** serv, fd_set rfds) {
         }
       }
     }
+    /* If my successor has closed the TCP session */
     else if(n == 0){
-      printf("Closed!\n");
+      printf("Successor (key %d) closed TCP session!\n", (*serv)->succ_key);
       close((*serv)->fd_tcpC);
-      return 0; // alterar depois!
+
+      /* Save my new successor */
+      (*serv)->succ_key = key;
+      (*serv)->succ_IP = realloc((*serv)->succ_IP, (strlen((*serv)->succ2_IP)+1) * sizeof(char));
+      strcpy((*serv)->succ_IP, (*serv)->succ2_IP);
+      (*serv)->succ_TCP = realloc((*serv)->succ_TCP, (strlen((*serv)->succ2_TCP)+1) * sizeof(char));
+      strcpy((*serv)->succ_TCP, (*serv)->succ2_TCP);
+
+      /* Open a new TCP session with my 2nd successor */
+      (*serv)->fd_tcpC = init_tcp_client(&(*serv), &rfds, "SUCCCONF");
+
     }//connection closed by peer
   }
   return (*serv)->fd_tcpC;
