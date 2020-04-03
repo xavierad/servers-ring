@@ -93,7 +93,6 @@ int main(int argc, char *argv[]) {
 
   }
   fd_parent = init_fd_parent();
-  maxfd = fd_parent;
 
   /* application loop */
   while(strcmp(cmd, "exit\n") != 0 || left != 1){
@@ -107,13 +106,15 @@ int main(int argc, char *argv[]) {
 
     FD_ZERO(&readfds);          /* initialize the fd set */
     FD_SET(0, &readfds);        /* add stdin fd (0) */
+
     FD_SET(fd_parent, &readfds);
+    maxfd = fd_parent;
+
     FD_SET(fd_pred, &readfds);
-    maxfd=max(maxfd,fd_pred);
+    maxfd = max(maxfd,fd_pred);
 
     FD_SET(fd_tcpC, &readfds);
-    maxfd=max(maxfd,fd_tcpC);
-
+    maxfd = max(maxfd,fd_tcpC);
 
     if (select(maxfd+1, &readfds, (fd_set*) NULL, (fd_set*) NULL, (struct timeval*) NULL) < 0) {
       perror("ERROR in select");
@@ -245,8 +246,8 @@ int main(int argc, char *argv[]) {
     if(serv != NULL) {
       printf("\n");
 
-      fd_pred = tcpS(&serv, readfds);
       tcpS_recv(&serv, readfds);
+      fd_pred = tcpS(&serv, readfds);
       fd_tcpC= tcpC(&serv, readfds);
 
       f = 1;

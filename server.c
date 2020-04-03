@@ -788,7 +788,6 @@ int tcpC (server** serv, fd_set rfds) {
           strcpy((*serv)->succ_TCP, port);
 
           (*serv)->fd_tcpC = init_tcp_client(&(*serv), &rfds, "SUCC");
-          printf("fd_tcpc: %d\n", (*serv)->fd_tcpC);
         }
       }
     }
