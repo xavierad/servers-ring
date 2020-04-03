@@ -149,13 +149,13 @@ int main(int argc, char *argv[]) {
 
       else if(strncmp(token, "entry", 5) == 0){
 
-        // number of arguments comparison and validating the required integer
+        if(serv == NULL) printf("No ring created!\n");
+        else if(!left || entry) printf("You cannot do an 'entry' command!\n");
         if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'entry <i> <boot> <boot.IP> <boot.TCP>'?\n");
-        else if(serv == NULL) printf("No ring created!\n");
         else {
-          //do entry server stuff here...
-
-
+          /* entry server stuff here */
+          init_udp_client(&serv, args[3], args[4]);
+          fd_tcpC = init_tcp_client(&serv, &readfds, "NEW");
 
           printf("The new server has entered!\n");
           entry = 1;
@@ -167,11 +167,11 @@ int main(int argc, char *argv[]) {
       else if(strncmp(token, "sentry", 5) == 0){
 
         if(serv == NULL) printf("No ring created!\n");
-        else if(!left || entry) printf("You cannot do a sentry command!\n");
+        else if(!left || entry) printf("You cannot do a 'sentry' command!\n");
         else if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'sentry <i> <succi> <succi.IP> <succi.TCP>'?\n");
         else {
 
-          /* entry server stuff here */
+          /* sentry server stuff here */
           if(!update_state(&serv, atoi(args[1]), atoi(args[2]), args[3], args[4])) printf("Key %s is not the local!\n", args[1]);
           else{
             /* TCP session with known successor */
@@ -246,6 +246,7 @@ int main(int argc, char *argv[]) {
     if(serv != NULL) {
       printf("\n");
 
+      /* tcpS_recv only knows about fd_pred updated after tcpS returns it */
       tcpS_recv(&serv, readfds);
       fd_pred = tcpS(&serv, readfds);
       fd_tcpC= tcpC(&serv, readfds);

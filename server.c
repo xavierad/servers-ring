@@ -24,13 +24,13 @@ struct _server
   /* My client and server sockets */
   int fd_tcpS; // this to listen to clients
   int fd_tcpC; // this is to get into a ring (sentry, entry)
+  int fd_updS; // this is for UDP connections
 
   /* Server state */
   /* about the local */
   int node_key;    // node's key
   char *node_IP;   // node's ip
   char *node_TCPs; // node's port
-  char *node_UDP;
 
   /* about the successor */
   int succ_key;   // successor's key
@@ -155,7 +155,6 @@ void freeServer(server** serv)
 
     if((*serv)->node_IP != NULL) free((*serv)->node_IP);
     if((*serv)->node_TCPs != NULL) free((*serv)->node_TCPs);
-    if((*serv)->node_UDP != NULL) free((*serv)->node_UDP);
 
     if((*serv)->succ_IP != NULL) free((*serv)->succ_IP);
     if((*serv)->succ_TCP != NULL) free((*serv)->succ_TCP);
@@ -196,13 +195,13 @@ server* newr(int i, char* ip, char* port)
   /* Default info assignement, -1 or NULL means empty */
   serv->fd_tcpS = -1;
   serv->fd_tcpC = -1;
+  serv->fd_updS = -1;
 
   serv->node_key = i;
   serv->node_IP = (char *) malloc((strlen(ip) + 1) * sizeof(char));
   serv->node_TCPs = (char *) malloc((strlen(port) + 1) * sizeof(char));
   strcpy(serv->node_IP, ip);
   strcpy(serv->node_TCPs, port);
-  serv->node_UDP = NULL;
 
   serv->succ_key = i;
   serv->succ_IP = (char *) malloc((strlen(ip) + 1) * sizeof(char));
@@ -245,8 +244,6 @@ void showState(server* serv)
     printf("         Key: %d\n", serv->node_key);
     printf("         IP: %s\n", serv->node_IP);
     printf("         TCP server port: %s\n", serv->node_TCPs);
-    //printf("         TCP client port: %s\n", serv->node_TCPc);
-    printf("         UDP port: %s\n", serv->node_UDP);
 
     printf("\n------ ABOUT THE SUCCESSOR SERVER ------\n");
     printf("         Key: %d\n", serv->succ_key);
@@ -339,13 +336,94 @@ int init_fd_parent () {
   int fd;
 
   if((fd=socket(AF_INET,SOCK_STREAM,0)) == -1){
-    printf("An error occurred on socket() function!\n");
+    perror("An error occurred on TCP socket() function!\n");
     exit(1);
   }
 
   return fd;
 }
 
+
+int init_udp_server(char *port, server **serv)
+{
+  int fd,errcode;
+
+  struct addrinfo hints,*res;
+
+
+  fd=socket(AF_INET,SOCK_DGRAM,0); //UDP socket
+  if(fd==-1) {
+    perror("(UDP) An error occurred on socket() function!");
+    exit(1);
+  }
+
+  (*serv)->fd_updS = fd;
+
+  memset(&hints,0,sizeof hints);
+  hints.ai_family=AF_INET; // IPv4
+  hints.ai_socktype=SOCK_DGRAM; // UDP socket
+  hints.ai_flags=AI_PASSIVE;
+
+  errcode=getaddrinfo(NULL, (*serv)->node_TCPs, &hints, &res);
+  if(errcode!=0) {
+    perror("(UDP) An error occurred on getting addresses");
+    exit(1);
+  }
+
+  return fd;
+}
+
+
+void init_udp_client(server **serv, char *ip, char *port)
+{
+  struct addrinfo hints,*res;
+  int fd,errcode;
+  ssize_t n;
+  struct sockaddr_in addr;
+  socklen_t addrlen;
+  char msg[128], buffer[128];
+
+  fd = socket(AF_INET, SOCK_DGRAM, 0);//UDP socket
+  if(fd == -1){
+    perror("(UDP) An error occurred on socket() function!");
+    exit(1);
+  }
+
+  memset(&hints, 0, sizeof hints);
+  hints.ai_family = AF_INET;//IPv4
+  hints.ai_socktype = SOCK_DGRAM;//UDP socket
+
+  errcode = getaddrinfo(ip, port, &hints, &res);
+  if(errcode != 0) {
+    perror("(UDP) An error occurred on getting addresses\n");
+    exit(1);
+  }
+
+  /* after initiating udp client, message can be sent immediately
+  and listen for response */
+  sprintf(msg, "EFND %d", (*serv)->node_key);
+  n = sendto(fd, msg, strlen(msg), 0, res->ai_addr, res->ai_addrlen);
+  if(n==-1) {
+     perror("(UDP) Error occurred in sending");
+     exit(1);
+  }
+
+  n=recvfrom((*serv)->fd_updS,buffer, 128, 0, (struct sockaddr*)&addr, &addrlen);
+  if(n==-1) {
+    perror("Error on reading (UPD)\n");
+    exit(0);
+  }
+  printf("(UDP) Message received: %s\n", buffer);
+
+  if(buffer[0] == 'E') {
+    char first[20], succ_ip[20], succ_port[20];
+    int key, succ_key;
+
+    sscanf(buffer, "%s %d %d %s %s", first, &key, &succ_key, succ_ip, succ_port);
+    update_state(&(*serv), key, succ_key, succ_ip, succ_port);
+  }
+  freeaddrinfo(res);
+}
 
 /*******************************************************************************
  * init_tcp_server(char* , server** ,int )
@@ -498,6 +576,29 @@ int init_tcp_client(server** serv, fd_set *rfds, char *mode) {
 }
 
 
+void udpS(server** serv) {
+
+  struct sockaddr_in addr;
+  char buffer[128];
+  ssize_t n;
+  socklen_t addrlen;
+
+  addrlen=sizeof(addr);
+  n=recvfrom((*serv)->fd_updS, buffer, 128, 0, (struct sockaddr*)&addr, &addrlen);
+  if(n==-1) {
+    perror("(UDP) Error on reading\n");
+    exit(0);
+  }
+
+  write(1,"echo: ",6);//stdout
+  write(1,buffer,n);
+
+  close((*serv)->fd_tcpS);
+  (*serv)->fd_tcpS = -1;
+
+}
+
+
 /*******************************************************************************
  * tcpS(server** , fd_set )
  *
@@ -597,7 +698,6 @@ int tcpS(server** serv, fd_set rfds) {
 
         (*serv)->fd_pred = newfd;
 
-        //return newfd;
       }
     }
   }
@@ -628,9 +728,13 @@ void tcpS_recv(server **serv, fd_set rfds){
         perror("An error occurred on read() function!");
       }
       printf("Message received from predecessor: %s\n", buffer);
-    /*  printf("from %s:%d   fd: %d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), (*serv)->fd_pred);
-      write(1,"Received: ",10); write(1, buffer, n);
-      printf("\n");*/
+
+      /* Reading the buffer until the '\n' character */
+      for (int i = 0; i < strlen(buffer); i++) {
+        if(buffer[i] == '\n' && i < (strlen(buffer) - 1)) {
+          buffer[i+1] = '\0';
+        }
+      }
 
       /* Interpret message here and answer to client if needed*/
       if(buffer[0] == 'F') sscanf(buffer, "%s %d %d %s %s", first, &target_key, &source_key, ip, port);
@@ -753,6 +857,13 @@ int tcpC (server** serv, fd_set rfds) {
         exit(1);
       }
       else {
+        /* Reading the buffer until the '\n' character */
+        for (int i = 0; i < strlen(buffer); i++) {
+          if(buffer[i] == '\n' && i < (strlen(buffer) - 1)) {
+            buffer[i+1] = '\0';
+          }
+        }
+
         printf("From server: %s\n", buffer);
         sscanf(buffer, "%s %d %s %s", first, &key, ip, port);
 

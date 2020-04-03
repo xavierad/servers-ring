@@ -27,9 +27,15 @@ int update_state(server** serv, int key, int succ_key, char* succ_IP, char* succ
 
 int init_fd_parent();
 
+int init_udp_server(char *port, server **serv);
+
+void init_udp_client(server **serv, char *ip, char *port);
+
 void init_tcp_server(char* port, server** serv, int fd);
 
 int init_tcp_client(server** serv, fd_set* rfds, char *mode);
+
+void udpS(server** serv);
 
 int tcpS(server** serv, fd_set rfds);
 
