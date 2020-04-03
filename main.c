@@ -53,6 +53,7 @@ int main(int argc, char *argv[]) {
   int maxfd, fd_parent, fd_pred=0, fd_tcpC=0;
   fd_set readfds;
 
+  int delegate;
   /* validating the initiating command: ./dkt <ip> <port> */
   if(argc != 3) {
     printf("\nThe command must be in format './dkt <ip> <port>'\n\n");
@@ -99,7 +100,7 @@ int main(int argc, char *argv[]) {
 
     memset(cmd, '\0', sizeof(cmd)); /* setting all values of cmd */
 
-    if(f) printf("\n > ");
+    if(f == 1) printf("\n > ");
 	  fflush(stdout);
 
     f = 0;
@@ -138,7 +139,7 @@ int main(int argc, char *argv[]) {
           init_tcp_server(port, &serv, fd_parent); /* The TCP server initialized */
           fd_tcpC = init_tcp_client(&serv, &readfds, "NEW"); /* TCP session with succ (with myself), I'm also client */
 
-        
+
 
           printf("A new ring has been created!\n");
         }
@@ -170,7 +171,7 @@ int main(int argc, char *argv[]) {
         else {
 
           /* entry server stuff here */
-          if(!update_state(&serv, atoi(args[1]), atoi(args[2]), args[3], args[4])) printf("Key <i> is not the local!\n");
+          if(!update_state(&serv, atoi(args[1]), atoi(args[2]), args[3], args[4])) printf("Key %s is not the local!\n", args[1]);
           else{
             /* TCP session with known successor */
             fd_tcpC = init_tcp_client(&serv, &readfds, "NEW");
@@ -187,7 +188,6 @@ int main(int argc, char *argv[]) {
         else {
           // do leave ring stuff here
 
-          // fazer mais
           leave(&serv);
           fd_pred = 0;
           fd_tcpC = 0;
@@ -211,10 +211,23 @@ int main(int argc, char *argv[]) {
 
         if(!checkCommand_NEW_FIND(token)) printf("Did you mean something like 'find <i>'?\n");
         else if(serv == NULL) printf("No ring created!\n");
+        else if(atoi(args[1]) >= N ) printf("The maximum key alowed in this ring is %d\n", N-1);
         else {
-          //do find server stuff here...
+          /* delegate informs if we have to delegate the search of the key */
+          if(IsItMine(atoi(args[1]), serv) == 0) {
+            delegate = compare_distance(atoi(args[1]), serv);
 
-          printf("Found the server with key %d!\n", atoi(args[1]));
+            /* Successor server has the key */
+            if(delegate == 0) k_fndinsucc( atoi(args[1]) , serv);
+
+            /* delegate the search to successor */
+            else DelegateSearchLocal(serv, atoi(args[1]));
+
+          }
+          else {
+            printf("Found the key %d on the local server!\n", atoi(args[1]));
+          }
+
         }
         free(args);
       }
@@ -240,7 +253,7 @@ int main(int argc, char *argv[]) {
     }
   }// while cmd not equal to exit
 
-  /* exit and deallocate all memory allocated */
+  /* exit and deallocate all memory */
   freeServer(&serv);
 
   return 0;

@@ -1,11 +1,19 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-
+#define N 6 // maximum length of the ring
 
 typedef struct _server server;
 
-int distanceN (int k, int l, int N);
+int distanceN (int k, int l);
+
+int IsItMine( int k, server* serv);
+
+int compare_distance( int k, server* serv);
+
+void k_fndinsucc(int k, server* serv);
+
+void DelegateSearchLocal(server* serv, int target_key);
 
 void freeServer(server** serv);
 

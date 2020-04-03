@@ -51,8 +51,8 @@ int check_IP(char* s) {
     }
 
     int i=0;
-    for(;token = strtok(NULL, "."); token != NULL)
-    {
+    for(; (token = strtok(NULL, ".")); /*token != NULL*/) {
+
      i++;
      if(strlen(token)>3) {
        free(auxs);
@@ -102,7 +102,7 @@ int checkCommand_NEW_FIND(char* token ) { // mode indicates if the command is ne
   args[0] = token;
 
   int i = 1;
-  for ( ;token = strtok(NULL, " "); token != NULL)
+  for ( ; (token = strtok(NULL, " ")); /*token != NULL*/)
   {
     args[i] = token;
 
@@ -147,7 +147,7 @@ int checkCommand_S_ENTRY(char* token)
 
 
   int i = 1;
-  for ( ;token = strtok(NULL, " "); token != NULL)
+  for ( ; (token = strtok(NULL, " ")); /*token != NULL*/)
   {
     args[i] = token;
 
@@ -159,13 +159,11 @@ int checkCommand_S_ENTRY(char* token)
     }
   }
 
-  if(i < 5 )
-  {
+  if(i < 5 ) {
     printf("Too few arguments!\n");
     return 0;
   }
-  else if( args != NULL )
-  {
+  else if( args != NULL ) {
 
     if(!checkInteger(args[1]))
     {

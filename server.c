@@ -9,11 +9,6 @@
 #include <string.h>
 #include "server.h"
 
-
-
-
-
-
 /* Ideias para as comunicações
 Um nó será servidor e cliente.
 Portanto, do ponto de vista de servidor, estará a ouvir no seu porto, corre tcpS.
@@ -24,7 +19,6 @@ Faz pedidos ao seu sucessor.
 */
 
 
-
 struct _server
 {
   /* My client and server sockets */
@@ -32,24 +26,25 @@ struct _server
   int fd_tcpC; // this is to get into a ring (sentry, entry)
 
   /* Server state */
-  /* the local */
+  /* about the local */
   int node_key;    // node's key
   char *node_IP;   // node's ip
   char *node_TCPs; // node's port
-//  char *node_UDP;
+  char *node_UDP;
 
-  /* the successor */
+  /* about the successor */
   int succ_key;   // successor's key
   char *succ_IP;  // successor's ip
   char *succ_TCP; // successor's port
 
-  /* the 2nd successor */
+  /* about the 2nd successor */
   int succ2_key;   // 2nd successor's key
   char *succ2_IP;  // 2nd successor's ip
   char *succ2_TCP; // 2nd successor's port
 
-  /* the predecessor */
+  /* about the predecessor */
   int fd_pred;    // predecessor's socket, to send messages when when appropriated
+  int pred_key;   // predecessor's key
   char *pred_IP;  // predecessor's ip
   char *pred_TCP; // predecessor's port
 
@@ -58,18 +53,97 @@ struct _server
 
 
 /*******************************************************************************
- * distanceN(int , int, int ) - GETS THE DISTANCE BETWEEN k AND l
+ * distanceN(int , int, int )
+ *
+ * Description: gets the distance between key 'k' and key 'l'
  *
  * returns: distance between k and l keys
 *******************************************************************************/
-int distanceN (int k, int l, int N)
+int distanceN (int k, int l)
 {
-  return ((l-k) % N);
+  int d = ((l-k) % N);
+
+  return (d < 0 ? d + N : d);
 }
 
+/*******************************************************************************
+ * IsItMine( int k, server** serv)
+ *
+ * Description: check if the key is on the local server
+ *
+ * returns: 1 if it is, 0 if not
+*******************************************************************************/
+int IsItMine( int k, server* serv)
+{
+  if( serv->node_key == k) return 1;
+
+  return 0;
+}
 
 /*******************************************************************************
- * freeServer(server** ) - DEALLOCATES MEMORY ALLOCATED FOR server**
+ * compare_distance( int k, server* serv)
+ *
+ * Description: Evaluates the distances between the key the local server and
+ *              the key and the succ
+ *
+ * returns:  1 if we must delegate the search and 0 if succ has the key
+*******************************************************************************/
+int compare_distance( int k, server* serv)
+{
+    int dn_succ;
+    int dn_me;
+
+    dn_succ = distanceN (k, serv->succ_key);
+    dn_me = distanceN (k, serv->node_key);
+
+    printf("dn succ %d\n", dn_succ);
+    printf("dn me %d\n", dn_me);
+    printf("N: %d\n", N);
+    printf("k: %d\n", k);
+    printf("succk: %d\n", serv->succ_key);
+    printf("nodek: %d\n", serv->node_key);
+
+    if( dn_succ < dn_me) return 0;
+    else return 1;
+}
+
+/*******************************************************************************
+ * k_fndinsucc(int k, server* serv)
+ *
+ * Description: informs that the key was found in the successor server
+ *
+ * returns: void
+*******************************************************************************/
+void k_fndinsucc(int k, server *serv)
+{
+  printf("Key %d found in successor %d %s %s\n", k, serv->succ_key, serv->succ_IP, serv->succ_TCP);
+}
+
+/*******************************************************************************
+ * DelegateSearchLocal(server* serv, int target_key)
+ *
+ * Description: send msg <FND k i i.IP i.TCP> to succ
+ *
+ * returns: void
+*******************************************************************************/
+void DelegateSearchLocal(server* serv, int target_key)
+{
+  printf("Key not found in successor, delegating search to sucessor ...\n");
+  char msg[128];
+  sprintf(msg, "FND %d %d %s %s\n", target_key, serv->node_key, serv->node_IP, serv->node_TCPs);
+
+  if(write(serv->fd_tcpC, msg, strlen(msg)) == -1)/*error*/
+  {
+     perror("Error occurred in writting");
+     exit(1);
+  }
+
+}
+
+/*******************************************************************************
+ * freeServer(server** )
+ *
+ * Description: deallocates all memory associated to server
  *
  * returns: void
 *******************************************************************************/
@@ -78,9 +152,20 @@ void freeServer(server** serv)
 
   if((*serv) != NULL)
   {
-    //if((*serv)->fd != NULL) free((*serv)->fd);
+
+    if((*serv)->node_IP != NULL) free((*serv)->node_IP);
+    if((*serv)->node_TCPs != NULL) free((*serv)->node_TCPs);
+    if((*serv)->node_UDP != NULL) free((*serv)->node_UDP);
+
     if((*serv)->succ_IP != NULL) free((*serv)->succ_IP);
     if((*serv)->succ_TCP != NULL) free((*serv)->succ_TCP);
+
+    if((*serv)->succ2_IP != NULL) free((*serv)->succ2_IP);
+    if((*serv)->succ2_TCP != NULL) free((*serv)->succ2_TCP);
+
+    if((*serv)->pred_IP != NULL) free((*serv)->pred_IP);
+    if((*serv)->pred_TCP != NULL) free((*serv)->pred_TCP);
+
     free(*serv);
     *serv = NULL;
   }
@@ -88,7 +173,9 @@ void freeServer(server** serv)
 
 
 /*******************************************************************************
- * newr(int ,char* , char* ) - CREATES A NEW RING
+ * newr(int ,char* , char* )
+ *
+ * Description: creates a new ring (basically a new server structure)
  *
  * returns: a pointer to the local server that belongs to the new ring
 *******************************************************************************/
@@ -101,7 +188,7 @@ server* newr(int i, char* ip, char* port)
   serv = (server*) malloc(sizeof(server));
   if(serv == NULL)
   {
-    perror("Something went wrong with creating new ring");
+    printf("Something went wrong with creating new ring");
     exit(0);
   }
 
@@ -115,7 +202,7 @@ server* newr(int i, char* ip, char* port)
   serv->node_TCPs = (char *) malloc((strlen(port) + 1) * sizeof(char));
   strcpy(serv->node_IP, ip);
   strcpy(serv->node_TCPs, port);
-  //serv->node_UDP = NULL;
+  serv->node_UDP = NULL;
 
   serv->succ_key = i;
   serv->succ_IP = (char *) malloc((strlen(ip) + 1) * sizeof(char));
@@ -141,7 +228,10 @@ server* newr(int i, char* ip, char* port)
 
 
 /*******************************************************************************
- * showState(server* ) - SHOWING THE LOCAL SERVER STATE
+ * showState(server* )
+ *
+ * Description: shows the local server state, not all info in server structure
+                is needed to be shown
  *
  * returns: void
 *******************************************************************************/
@@ -166,6 +256,7 @@ void showState(server* serv)
     printf("\n------ ABOUT THE 2nd SUCCESSOR SERVER ------\n");
     printf("         Key: %d\n", serv->succ2_key);
     printf("         IP: %s\n", serv->succ2_IP);
+    printf("         IP: %s\n", serv->succ2_TCP);
   }
 }
 
@@ -186,21 +277,22 @@ void leave(server** serv)
   close((*serv)->fd_pred); // closing TCP session with predecessor (client)
 
   /* Resetting the successor: the default (see newr() function) */
+  (*serv)->succ_key = (*serv)->node_key;
   (*serv)->succ_IP = realloc((*serv)->succ_IP, (strlen((*serv)->node_IP)+1) * sizeof(char));
   (*serv)->succ_TCP = realloc((*serv)->succ_TCP, (strlen((*serv)->node_TCPs)+1) * sizeof(char));
-  (*serv)->succ_key = (*serv)->node_key;
   strcpy((*serv)->succ_IP, (*serv)->node_IP);
   strcpy((*serv)->succ_TCP, (*serv)->node_TCPs);
 
   /* Resetting the 2nd successor */
+  (*serv)->succ2_key = (*serv)->node_key;
   (*serv)->succ2_IP = realloc((*serv)->succ_IP, (strlen((*serv)->node_IP)+1) * sizeof(char));
   (*serv)->succ2_TCP = realloc((*serv)->succ_TCP, (strlen((*serv)->node_TCPs)+1) * sizeof(char));
-  (*serv)->succ2_key = (*serv)->node_key;
   strcpy((*serv)->succ2_IP, (*serv)->node_IP);
   strcpy((*serv)->succ2_TCP, (*serv)->node_TCPs);
 
   /* Resetting the predecessor */
   (*serv)->fd_pred = -1;
+  (*serv)->pred_key = (*serv)->node_key;
   (*serv)->pred_IP = realloc((*serv)->pred_IP, (strlen((*serv)->node_IP)+1) * sizeof(char));
   (*serv)->succ_TCP = realloc((*serv)->pred_TCP, (strlen((*serv)->node_TCPs)+1) * sizeof(char));
   strcpy((*serv)->succ_IP, (*serv)->node_IP);
@@ -221,7 +313,7 @@ void leave(server** serv)
 int update_state(server** serv, int key, int succ_key, char* succ_IP, char* succ_TCP) {
 
   /* if the key inserted is mine */
-  if((*serv)->node_key == key) {
+  if(IsItMine(key, (*serv))) {
     (*serv)->succ_IP = realloc((*serv)->succ_IP, (strlen(succ_IP)+1) * sizeof(char));
     (*serv)->succ_TCP = realloc((*serv)->succ_TCP, (strlen(succ_TCP)+1) * sizeof(char));
     (*serv)->succ_key = succ_key;
@@ -309,10 +401,9 @@ int init_tcp_client(server** serv, fd_set *rfds, char *mode) {
   printf("Initiating TCP client ...\n");
 
   struct addrinfo hints, *res;
-  ssize_t nbytes, nleft, nwritten, nread;
 
-  int fd, n;
-  char msg[128], buffer[128];
+  int fd;
+  char msg[128];
 
   fd = init_fd_parent();
   (*serv)->fd_tcpC = fd; // Saving my fd in order to get its value in tcpC and set it to rfds
@@ -419,9 +510,9 @@ int init_tcp_client(server** serv, fd_set *rfds, char *mode) {
 int tcpS(server** serv, fd_set rfds) {
 
   int fd = (*serv)->fd_tcpS;
-  int newfd, errcode, max_clients = 2, counter;
+  int newfd;
   char resp[128], buffer[128];
-  ssize_t n, nw;
+  ssize_t n;
   struct sockaddr_in addr; socklen_t addrlen;
 
   /* auxiliary variables for scanning the buffer (sscanf) */
@@ -458,8 +549,15 @@ int tcpS(server** serv, fd_set rfds) {
       printf("%s\n",buffer);
       // NOTA: INTERPRETAR O BUFFER COM SSCANF, QUE TIPO DE MENSAGEM É, VER A QUESTÃO DO \n (no 'for' de cima)
 
+      /* If incoming message is the type of KEY ..., some server has found the key*/
+      if(buffer[0] == 'K') {
+        int server_key, target_key;
+
+        sscanf(buffer, "%s %d %d %s %s", first, &target_key, &server_key, ip, port);
+        printf("Key %d found in the server %d %s %s\n", target_key, server_key, ip, port);
+      }
       /* SENTRY */
-      if(strcmp(buffer, "SUCCCONF\n") != 0){
+      else if(strcmp(buffer, "SUCCCONF\n") != 0){
         isSentry = 1;
 
         sscanf(buffer, "%s %d %s %s", first, &key, ip, port);
@@ -488,18 +586,23 @@ int tcpS(server** serv, fd_set rfds) {
         }
       }
 
-      /* SENTRY - Saving new client (predecessor) stuff here */
-      (*serv)->pred_IP = (char *) realloc((*serv)->pred_IP, (strlen(ip)+1) * sizeof(char));
-      (*serv)->pred_TCP = (char *) realloc((*serv)->pred_TCP, (strlen(port)+1) * sizeof(char));
-      strcpy((*serv)->pred_IP, ip);
-      strcpy((*serv)->pred_TCP, port);
+      /* No need to save new fd for FIND purposes, when some server finds the key k */
+      if (strcmp(first, "KEY") != 0) {
+        /* SENTRY - Saving new client (predecessor) stuff here */
+        (*serv)->pred_key = key;
+        (*serv)->pred_IP = (char *) realloc((*serv)->pred_IP, (strlen(ip)+1) * sizeof(char));
+        (*serv)->pred_TCP = (char *) realloc((*serv)->pred_TCP, (strlen(port)+1) * sizeof(char));
+        strcpy((*serv)->pred_IP, ip);
+        strcpy((*serv)->pred_TCP, port);
 
-      (*serv)->fd_pred = newfd;
+        (*serv)->fd_pred = newfd;
 
-      return newfd;
+        //return newfd;
+      }
     }
   }
-  return 0;
+  if ((*serv)->fd_pred != -1) return (*serv)->fd_pred;
+  else return 0; // if predecessor has closed TCP session fd_pred = -1
 }
 
 
@@ -512,9 +615,11 @@ int tcpS(server** serv, fd_set rfds) {
 *******************************************************************************/
 void tcpS_recv(server **serv, fd_set rfds){
 
-  char buffer[128];
+  char buffer[128], first[20], ip[20], port[20];
+  int source_key, target_key, server_key; // target_key: key to be found by source_key
+  char msg[128];
+  int delegate;
   ssize_t n;
-  struct sockaddr_in addr; socklen_t addrlen;
 
   if(FD_ISSET((*serv)->fd_pred, &rfds)){
     printf("Aqui tcpS_recv!\n");
@@ -522,14 +627,90 @@ void tcpS_recv(server **serv, fd_set rfds){
       if(n == -1) {
         perror("An error occurred on read() function!");
       }
-      printf("from %s:%d   fd: %d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), (*serv)->fd_pred);
+      printf("Message received from predecessor: %s\n", buffer);
+    /*  printf("from %s:%d   fd: %d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), (*serv)->fd_pred);
       write(1,"Received: ",10); write(1, buffer, n);
-      printf("\n");
+      printf("\n");*/
 
-      /* Interpretate message here and answer to client if needed*/
+      /* Interpret message here and answer to client if needed*/
+      if(buffer[0] == 'F') sscanf(buffer, "%s %d %d %s %s", first, &target_key, &source_key, ip, port);
+      else if (buffer[0] == 'K') sscanf(buffer, "%s %d %d %s %s", first, &target_key, &server_key, ip, port);
 
+      /* FIND */
+      if(strcmp(first, "FND") == 0 ) {
 
+        /* do some calcs */
+        delegate = compare_distance(target_key, (*serv));
+
+         /* local server has the key */
+        if(delegate == 0) {
+          printf("pred key %d\n", (*serv)->pred_key);
+          /* if i == pred_key, server sends the msg directly to the fd_pred, no need to create a TCP session */
+          if(source_key == (*serv)->pred_key) {
+
+            sprintf(msg, "KEY %d %d %s %s\n", target_key, (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP);
+            if(write((*serv)->fd_pred, msg, strlen(msg)) == -1) {
+              perror("Error occurred in writting");
+              exit(1);
+            }
+            printf("Message to be sent to predecessor: %s\n", msg);
+          }
+
+          else if(source_key == (*serv)->succ_key ) {
+
+            sprintf(msg, "KEY %d %d %s %s\n", target_key, (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP);
+            if(write((*serv)->fd_tcpC, msg, strlen(msg)) == -1) {
+              perror("Error occurred in writting");
+              exit(1);
+            }
+            printf("Message to be sent to successor: %s\n", msg);
+          }
+          /* else server creates a temporary tcp client with the source */
+          //melhorar!!!
+          else {
+            printf("Initiating a temporary TCP session ...\n");
+            int temp_fd = init_fd_parent();
+
+            struct addrinfo hints, *res;
+
+            memset(&hints, 0, sizeof hints);
+            hints.ai_family = AF_INET;
+            hints.ai_socktype = SOCK_STREAM;
+
+            /* Conneting to server */
+            if(getaddrinfo(ip, port, &hints, &res) != 0){
+              perror("An error occurred on getting addresses");
+              exit(1);
+            }
+            if(connect(temp_fd, res->ai_addr,res->ai_addrlen) == -1){
+              perror("An error occurred in connection");
+              exit(1);
+            }
+
+            sprintf(msg, "KEY %d %d %s %s\n", target_key, source_key, ip, port);
+            if( write(temp_fd, msg, strlen(msg)) == -1) {
+              perror("Error occurred in writting");
+              exit(1);
+            }
+            printf("Message to be sent: %s\n", msg);
+
+            close(temp_fd);
+          }
+        }
+        else {
+          /* if condition not satisfied, delegate search to SUCCESSOR */
+          if(write((*serv)->fd_tcpC, buffer, strlen(buffer)) == -1) {
+             perror("Error occurred in writting");
+             exit(1);
+          }
+          printf("Message to be sent to successor: %s\n", msg);
+        }
+      }
+      else if (strcmp(first, "KEY") == 0) {
+        printf("Key %d found in the server %d %s %s\n", target_key, server_key, ip, port);
+      }
     }
+
     /* If my predecessor ends TCP session */
     else if (n == 0) {
       printf("Predecessor closed TCP session!\n");
@@ -574,12 +755,16 @@ int tcpC (server** serv, fd_set rfds) {
 
         /* Save my 2nd succesor info */
         if (strcmp(first, "SUCC") == 0){
-          (*serv)->succ2_key = key;
-          (*serv)->succ2_IP = realloc((*serv)->succ2_IP, (strlen(ip)+1) * sizeof(char));
-          strcpy((*serv)->succ2_IP, ip);
 
-          (*serv)->succ2_TCP = realloc((*serv)->succ2_TCP, (strlen(port)+1) * sizeof(char));
-          strcpy((*serv)->succ2_TCP, port);
+          if(key != (*serv)->succ_key) {
+            (*serv)->succ2_key = key;
+            (*serv)->succ2_IP = realloc((*serv)->succ2_IP, (strlen(ip)+1) * sizeof(char));
+            strcpy((*serv)->succ2_IP, ip);
+
+            (*serv)->succ2_TCP = realloc((*serv)->succ2_TCP, (strlen(port)+1) * sizeof(char));
+            strcpy((*serv)->succ2_TCP, port);
+          }
+
         }
 
         else if (strcmp(first, "NEW") == 0) {
