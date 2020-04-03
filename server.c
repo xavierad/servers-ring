@@ -640,12 +640,15 @@ void tcpS_recv(server **serv, fd_set rfds){
       if(strcmp(first, "FND") == 0 ) {
 
         /* do some calcs */
-        delegate = compare_distance(target_key, (*serv));
+        delegate = compare_distance(target_key, *serv);
 
-         /* local server has the key */
+        /* the successor server has the key */
         if(delegate == 0) {
+
           printf("pred key %d\n", (*serv)->pred_key);
-          /* if i == pred_key, server sends the msg directly to the fd_pred, no need to create a TCP session */
+          k_fndinsucc(target_key, *serv);
+
+          /* if source_key == pred_key, server sends the msg directly to the fd_pred, no need to create a TCP session */
           if(source_key == (*serv)->pred_key) {
 
             sprintf(msg, "KEY %d %d %s %s\n", target_key, (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP);
@@ -655,7 +658,7 @@ void tcpS_recv(server **serv, fd_set rfds){
             }
             printf("Message to be sent to predecessor: %s\n", msg);
           }
-
+          /* else if source_key == succ_key, server sends the msg directly to the fd_tcpC, no need to create a TCP session */
           else if(source_key == (*serv)->succ_key ) {
 
             sprintf(msg, "KEY %d %d %s %s\n", target_key, (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP);
@@ -687,7 +690,7 @@ void tcpS_recv(server **serv, fd_set rfds){
               exit(1);
             }
 
-            sprintf(msg, "KEY %d %d %s %s\n", target_key, source_key, ip, port);
+            sprintf(msg, "KEY %d %d %s %s\n", target_key, (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP);
             if( write(temp_fd, msg, strlen(msg)) == -1) {
               perror("Error occurred in writting");
               exit(1);
