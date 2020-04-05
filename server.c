@@ -28,6 +28,7 @@ struct _server
 
   int udp_reply; // a flag that rises when the node is ready to reply through UDP
   struct sockaddr_in addr;
+  socklen_t addrlen;
 
 
   /* Server state */
@@ -595,12 +596,12 @@ void udpS(server** serv, fd_set rfds) {
 
   char buffer[128];
   ssize_t n;
-  socklen_t addrlen;
 
   if(FD_ISSET((*serv)->fd_udpS, &rfds)){
 
-    addrlen=sizeof((*serv)->addr);
-    n=recvfrom((*serv)->fd_udpS, buffer, 128, 0, (struct sockaddr*)&((*serv)->addr), &addrlen);
+    (*serv)->addrlen = sizeof((*serv)->addr);
+
+    n=recvfrom((*serv)->fd_udpS, buffer, 128, 0, (struct sockaddr*)&((*serv)->addr), &((*serv)->addrlen));
     if(n==-1) {
       perror("(UDP) Error on reading\n");
       exit(0);
@@ -726,11 +727,10 @@ int tcpS(server** serv, fd_set rfds) {
 
         /* if it is to reply through udp connection */
         if((*serv)->udp_reply == 1) {
-          socklen_t addrlen =sizeof((*serv)->addr);
           char msg[128];
 
           sprintf(msg, "EKEY %d %d %s %s\n", target_key, server_key, ip, port);
-          n = sendto((*serv)->fd_udpS, msg, strlen(msg), 0,(struct sockaddr*)&((*serv)->addr), addrlen);
+          n = sendto((*serv)->fd_udpS, msg, strlen(msg), 0, (struct sockaddr*)&((*serv)->addr), (*serv)->addrlen);
           if(n==-1) {
              perror("(UDP) Error occurred in sending");
              exit(1);
