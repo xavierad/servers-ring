@@ -101,7 +101,8 @@ int compare_distance( int k, server* serv)
     dn_succ = distanceN (k, serv->succ_key);
     dn_me = distanceN (k, serv->node_key);
 
-    if( dn_succ < dn_me) return 0;
+    if(serv->node_key == serv->succ_key) return 0;
+    else if( dn_succ < dn_me) return 0;
     else return 1;
 }
 
@@ -841,7 +842,7 @@ void tcpS_recv(server **serv, fd_set rfds){
           k_fndinsucc(target_key, *serv);
 
           /* if source_key == pred_key, server sends the msg directly to the fd_pred, no need to create a TCP session */
-          if(source_key == (*serv)->pred_key && (*serv)->pred_key != (*serv)->node_key) {
+          if(source_key == (*serv)->pred_key ) {
 
             sprintf(msg, "KEY %d %d %s %s\n", target_key, (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP);
             if(write((*serv)->fd_pred, msg, strlen(msg)) == -1) {
@@ -851,7 +852,7 @@ void tcpS_recv(server **serv, fd_set rfds){
             printf("Message to be sent to predecessor: %s\n", msg);
           }
           /* else if source_key == succ_key, server sends the msg directly to the fd_tcpC, no need to create a TCP session */
-          else if(source_key == (*serv)->succ_key && (*serv)->succ_key != (*serv)->node_key) {
+          else if(source_key == (*serv)->succ_key) {
 
             sprintf(msg, "KEY %d %d %s %s\n", target_key, (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP);
             if(write((*serv)->fd_tcpC, msg, strlen(msg)) == -1) {
@@ -892,7 +893,7 @@ void tcpS_recv(server **serv, fd_set rfds){
             close(temp_fd);
           }
         }
-        else if((*serv)->succ_key != (*serv)->node_key) {
+        else {
           /* if condition not satisfied, delegate search to SUCCESSOR */
           if(write((*serv)->fd_tcpC, buffer, strlen(buffer)) == -1) {
              perror("Error occurred in writting");
