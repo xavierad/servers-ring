@@ -638,13 +638,16 @@ void udpS(server** serv, fd_set rfds) {
               exit(1);
             }
 
+            (*serv)->addrlen = sizeof((*serv)->addr);
             sprintf(msg, "EKEY %d %d %s %s", target_key, (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP);
-            n = sendto((*serv)->fd_udpS, msg, strlen(msg), 0, res->ai_addr, res->ai_addrlen);
+            n = sendto((*serv)->fd_udpS, msg, strlen(msg), 0, (struct sockaddr*)&((*serv)->addr), (*serv)->addrlen);
             if(n==-1) {
                perror("(UDP) Error occurred in sending");
                exit(1);
             }
-            printf("(UDP) Message to be sent: %s\n", msg);
+            printf("(UDP) Message to be sent through UDP: %s\n", msg);
+
+
           }
 
           /* delegate the search to successor */
@@ -729,13 +732,15 @@ int tcpS(server** serv, fd_set rfds) {
         if((*serv)->udp_reply == 1) {
           char msg[128];
 
+          (*serv)->addrlen = sizeof((*serv)->addr);
+          printf("Aqui!\n");
           sprintf(msg, "EKEY %d %d %s %s\n", target_key, server_key, ip, port);
           n = sendto((*serv)->fd_udpS, msg, strlen(msg), 0, (struct sockaddr*)&((*serv)->addr), (*serv)->addrlen);
           if(n==-1) {
              perror("(UDP) Error occurred in sending");
              exit(1);
           }
-          printf("(UDP) Message to be sent: %s\n", msg);
+          printf("(UDP) Message to be sent through UDP: %s\n", msg);
 
           (*serv)->udp_reply = 0;
         }
@@ -901,17 +906,16 @@ void tcpS_recv(server **serv, fd_set rfds){
 
         /* if it is to reply through udp connection */
         if((*serv)->udp_reply == 1) {
-          struct sockaddr_in addr;
-          socklen_t addrlen =sizeof(addr);
           char msg[128];
 
+          (*serv)->addrlen = sizeof((*serv)->addr);
           sprintf(msg, "EKEY %d %d %s %s\n", target_key, server_key, ip, port);
-          n = sendto((*serv)->fd_udpS, msg, strlen(msg), 0,(struct sockaddr*)&addr, addrlen);
+          n = sendto((*serv)->fd_udpS, msg, strlen(msg), 0, (struct sockaddr*)&((*serv)->addr), (*serv)->addrlen);
           if(n==-1) {
              perror("(UDP) Error occurred in sending");
              exit(1);
           }
-          printf("(UDP) Message to be sent: %s\n", msg);
+          printf("(UDP) Message to be sent through UDP: %s\n", msg);
 
           (*serv)->udp_reply = 0;
         }
@@ -972,17 +976,17 @@ int tcpC (server** serv, fd_set rfds) {
 
           /* if it is to reply through udp connection */
           if((*serv)->udp_reply == 1) {
-            struct sockaddr_in addr;
-            socklen_t addrlen = sizeof(addr);
             char msg[128];
 
+            (*serv)->addrlen = sizeof((*serv)->addr);
+            printf("Aqui!\n");
             sprintf(msg, "EKEY %d %d %s %s\n", target_key, server_key, ip, port);
-            n = sendto((*serv)->fd_udpS, msg, strlen(msg), 0, (struct sockaddr*)&addr, addrlen);
+            n = sendto((*serv)->fd_udpS, msg, strlen(msg), 0, (struct sockaddr*)&((*serv)->addr), (*serv)->addrlen);
             if(n==-1) {
                perror("(UDP) Error occurred in sending");
                exit(1);
             }
-            printf("(UDP) Message to be sent: %s\n", msg);
+            printf("(UDP) Message to be sent through UDP: %s\n", msg);
 
             (*serv)->udp_reply = 0;
           }
