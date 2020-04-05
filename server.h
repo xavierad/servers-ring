@@ -35,7 +35,7 @@ void init_tcp_server(char* port, server** serv, int fd);
 
 int init_tcp_client(server** serv, fd_set* rfds, char *mode);
 
-void udpS(server** serv);
+void udpS(server** serv, fd_set rfds);
 
 int tcpS(server** serv, fd_set rfds);
 

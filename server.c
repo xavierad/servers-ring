@@ -24,7 +24,11 @@ struct _server
   /* My client and server sockets */
   int fd_tcpS; // this to listen to clients
   int fd_tcpC; // this is to get into a ring (sentry, entry)
-  int fd_updS; // this is for UDP connections
+  int fd_udpS; // this is for UDP connections
+
+  int udp_reply; // a flag that rises when the node is ready to reply through UDP
+  struct sockaddr_in addr;
+
 
   /* Server state */
   /* about the local */
@@ -95,13 +99,6 @@ int compare_distance( int k, server* serv)
 
     dn_succ = distanceN (k, serv->succ_key);
     dn_me = distanceN (k, serv->node_key);
-
-    printf("dn succ %d\n", dn_succ);
-    printf("dn me %d\n", dn_me);
-    printf("N: %d\n", N);
-    printf("k: %d\n", k);
-    printf("succk: %d\n", serv->succ_key);
-    printf("nodek: %d\n", serv->node_key);
 
     if( dn_succ < dn_me) return 0;
     else return 1;
@@ -195,7 +192,7 @@ server* newr(int i, char* ip, char* port)
   /* Default info assignement, -1 or NULL means empty */
   serv->fd_tcpS = -1;
   serv->fd_tcpC = -1;
-  serv->fd_updS = -1;
+  serv->fd_udpS = -1;
 
   serv->node_key = i;
   serv->node_IP = (char *) malloc((strlen(ip) + 1) * sizeof(char));
@@ -346,10 +343,11 @@ int init_fd_parent () {
 
 int init_udp_server(char *port, server **serv)
 {
-  int fd,errcode;
+  printf("Initiating UDP server ...\n");
+
+  int fd, errcode;
 
   struct addrinfo hints,*res;
-
 
   fd=socket(AF_INET,SOCK_DGRAM,0); //UDP socket
   if(fd==-1) {
@@ -357,7 +355,7 @@ int init_udp_server(char *port, server **serv)
     exit(1);
   }
 
-  (*serv)->fd_updS = fd;
+  (*serv)->fd_udpS = fd;
 
   memset(&hints,0,sizeof hints);
   hints.ai_family=AF_INET; // IPv4
@@ -367,6 +365,11 @@ int init_udp_server(char *port, server **serv)
   errcode=getaddrinfo(NULL, (*serv)->node_TCPs, &hints, &res);
   if(errcode!=0) {
     perror("(UDP) An error occurred on getting addresses");
+    exit(1);
+  }
+
+   if(bind(fd,res->ai_addr, res->ai_addrlen) == -1) {
+    perror("(UDP) An error occurred on binding");
     exit(1);
   }
 
@@ -401,26 +404,38 @@ void init_udp_client(server **serv, char *ip, char *port)
 
   /* after initiating udp client, message can be sent immediately
   and listen for response */
-  sprintf(msg, "EFND %d", (*serv)->node_key);
+  sprintf(msg, "EFND %d\n", (*serv)->node_key);
   n = sendto(fd, msg, strlen(msg), 0, res->ai_addr, res->ai_addrlen);
   if(n==-1) {
      perror("(UDP) Error occurred in sending");
      exit(1);
   }
+  printf("(UDP) Message to be sent: %s\n", msg);
 
-  n=recvfrom((*serv)->fd_updS,buffer, 128, 0, (struct sockaddr*)&addr, &addrlen);
+
+  n=recvfrom(fd, buffer, 128, 0, (struct sockaddr*)&addr, &addrlen);
   if(n==-1) {
-    perror("Error on reading (UPD)\n");
+    perror("(UPD) Error on reading\n");
     exit(0);
   }
   printf("(UDP) Message received: %s\n", buffer);
+
+  /* Reading the buffer until the '\n' character */
+  for (int i = 0; i < strlen(buffer); i++) {
+    if(buffer[i] == '\n' && i < (strlen(buffer) - 1)) {
+      buffer[i+1] = '\0';
+    }
+  }
 
   if(buffer[0] == 'E') {
     char first[20], succ_ip[20], succ_port[20];
     int key, succ_key;
 
     sscanf(buffer, "%s %d %d %s %s", first, &key, &succ_key, succ_ip, succ_port);
-    update_state(&(*serv), key, succ_key, succ_ip, succ_port);
+    if(strcmp(first, "EKEY") == 0) {
+      /* SENTRY made after this function is called in main*/
+      update_state(&(*serv), key, succ_key, succ_ip, succ_port);
+    }
   }
   freeaddrinfo(res);
 }
@@ -576,25 +591,77 @@ int init_tcp_client(server** serv, fd_set *rfds, char *mode) {
 }
 
 
-void udpS(server** serv) {
+void udpS(server** serv, fd_set rfds) {
 
-  struct sockaddr_in addr;
   char buffer[128];
   ssize_t n;
   socklen_t addrlen;
 
-  addrlen=sizeof(addr);
-  n=recvfrom((*serv)->fd_updS, buffer, 128, 0, (struct sockaddr*)&addr, &addrlen);
-  if(n==-1) {
-    perror("(UDP) Error on reading\n");
-    exit(0);
+  if(FD_ISSET((*serv)->fd_udpS, &rfds)){
+
+    addrlen=sizeof((*serv)->addr);
+    n=recvfrom((*serv)->fd_udpS, buffer, 128, 0, (struct sockaddr*)&((*serv)->addr), &addrlen);
+    if(n==-1) {
+      perror("(UDP) Error on reading\n");
+      exit(0);
+    }
+    printf("(UDP) Received from a node through UDP: %s\n", buffer);
+
+    /* Reading the buffer until the '\n' character */
+    for (int i = 0; i < strlen(buffer); i++) {
+      if(buffer[i] == '\n' && i < (strlen(buffer) - 1)) {
+        buffer[i+1] = '\0';
+      }
+    }
+
+    if(buffer[0] == 'E') {
+      char first[20];
+      int target_key;
+
+      sscanf(buffer, "%s %d", first, &target_key);
+      if(strcmp(first, "EFND") == 0) {
+
+        /* do FIND tasks */
+        if(IsItMine(target_key, (*serv)) == 0) {
+          int delegate = compare_distance(target_key, (*serv));
+
+          /* Successor server has the key */
+          if(delegate == 0){
+            struct addrinfo hints,*res;
+            char msg[128];
+
+            k_fndinsucc(target_key, (*serv));
+
+            if (getaddrinfo(NULL, (*serv)->node_TCPs, &hints, &res) != 0) {
+              perror("(UDP) An error occurred on getting addresses");
+              exit(1);
+            }
+
+            sprintf(msg, "EKEY %d %d %s %s", target_key, (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP);
+            n = sendto((*serv)->fd_udpS, msg, strlen(msg), 0, res->ai_addr, res->ai_addrlen);
+            if(n==-1) {
+               perror("(UDP) Error occurred in sending");
+               exit(1);
+            }
+            printf("(UDP) Message to be sent: %s\n", msg);
+          }
+
+          /* delegate the search to successor */
+          else{
+            /* the server must reply through UDP */
+            (*serv)->udp_reply = 1;
+            DelegateSearchLocal((*serv), target_key);
+          }
+
+
+        }
+        else {
+          printf("Found the key %d on the local server!\n", target_key);
+        }
+      }
+    }
+    // we must not close fd_udpS, because this node must be listening for some entry request
   }
-
-  write(1,"echo: ",6);//stdout
-  write(1,buffer,n);
-
-  close((*serv)->fd_tcpS);
-  (*serv)->fd_tcpS = -1;
 
 }
 
@@ -656,6 +723,22 @@ int tcpS(server** serv, fd_set rfds) {
 
         sscanf(buffer, "%s %d %d %s %s", first, &target_key, &server_key, ip, port);
         printf("Key %d found in the server %d %s %s\n", target_key, server_key, ip, port);
+
+        /* if it is to reply through udp connection */
+        if((*serv)->udp_reply == 1) {
+          socklen_t addrlen =sizeof((*serv)->addr);
+          char msg[128];
+
+          sprintf(msg, "EKEY %d %d %s %s\n", target_key, server_key, ip, port);
+          n = sendto((*serv)->fd_udpS, msg, strlen(msg), 0,(struct sockaddr*)&((*serv)->addr), addrlen);
+          if(n==-1) {
+             perror("(UDP) Error occurred in sending");
+             exit(1);
+          }
+          printf("(UDP) Message to be sent: %s\n", msg);
+
+          (*serv)->udp_reply = 0;
+        }
       }
       /* SENTRY */
       else if(strcmp(buffer, "SUCCCONF\n") != 0){
@@ -753,7 +836,7 @@ void tcpS_recv(server **serv, fd_set rfds){
           k_fndinsucc(target_key, *serv);
 
           /* if source_key == pred_key, server sends the msg directly to the fd_pred, no need to create a TCP session */
-          if(source_key == (*serv)->pred_key) {
+          if(source_key == (*serv)->pred_key && (*serv)->pred_key != (*serv)->node_key) {
 
             sprintf(msg, "KEY %d %d %s %s\n", target_key, (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP);
             if(write((*serv)->fd_pred, msg, strlen(msg)) == -1) {
@@ -763,7 +846,7 @@ void tcpS_recv(server **serv, fd_set rfds){
             printf("Message to be sent to predecessor: %s\n", msg);
           }
           /* else if source_key == succ_key, server sends the msg directly to the fd_tcpC, no need to create a TCP session */
-          else if(source_key == (*serv)->succ_key ) {
+          else if(source_key == (*serv)->succ_key && (*serv)->succ_key != (*serv)->node_key) {
 
             sprintf(msg, "KEY %d %d %s %s\n", target_key, (*serv)->succ_key, (*serv)->succ_IP, (*serv)->succ_TCP);
             if(write((*serv)->fd_tcpC, msg, strlen(msg)) == -1) {
@@ -804,7 +887,7 @@ void tcpS_recv(server **serv, fd_set rfds){
             close(temp_fd);
           }
         }
-        else {
+        else if((*serv)->succ_key != (*serv)->node_key) {
           /* if condition not satisfied, delegate search to SUCCESSOR */
           if(write((*serv)->fd_tcpC, buffer, strlen(buffer)) == -1) {
              perror("Error occurred in writting");
@@ -815,6 +898,23 @@ void tcpS_recv(server **serv, fd_set rfds){
       }
       else if (strcmp(first, "KEY") == 0) {
         printf("Key %d found in the server %d %s %s\n", target_key, server_key, ip, port);
+
+        /* if it is to reply through udp connection */
+        if((*serv)->udp_reply == 1) {
+          struct sockaddr_in addr;
+          socklen_t addrlen =sizeof(addr);
+          char msg[128];
+
+          sprintf(msg, "EKEY %d %d %s %s\n", target_key, server_key, ip, port);
+          n = sendto((*serv)->fd_udpS, msg, strlen(msg), 0,(struct sockaddr*)&addr, addrlen);
+          if(n==-1) {
+             perror("(UDP) Error occurred in sending");
+             exit(1);
+          }
+          printf("(UDP) Message to be sent: %s\n", msg);
+
+          (*serv)->udp_reply = 0;
+        }
       }
     }
 
@@ -846,7 +946,7 @@ int tcpC (server** serv, fd_set rfds) {
 
   /* auxiliary variables, for scanning the buffer (sscanf) */
   char first[128], ip[128], port[128];
-  int key, n;
+  int key, n, server_key, target_key;
 
   /* fd_tcpC cannot be -1  ACHO QUE SE PODE TIRAR O fd_tcpC != -1  !!!!!*/
   if((*serv)->fd_tcpC != -1 && FD_ISSET((*serv)->fd_tcpC, &rfds)){
@@ -857,6 +957,7 @@ int tcpC (server** serv, fd_set rfds) {
         exit(1);
       }
       else {
+
         /* Reading the buffer until the '\n' character */
         for (int i = 0; i < strlen(buffer); i++) {
           if(buffer[i] == '\n' && i < (strlen(buffer) - 1)) {
@@ -865,40 +966,66 @@ int tcpC (server** serv, fd_set rfds) {
         }
 
         printf("From server: %s\n", buffer);
-        sscanf(buffer, "%s %d %s %s", first, &key, ip, port);
+        if(buffer[0] == 'K') {
 
-        /* Save my 2nd succesor info */
-        if (strcmp(first, "SUCC") == 0){
+          sscanf(buffer, "%s %d %d %s %s", first, &target_key, &server_key, ip, port);
 
-          if(key != (*serv)->succ_key) {
-            (*serv)->succ2_key = key;
-            (*serv)->succ2_IP = realloc((*serv)->succ2_IP, (strlen(ip)+1) * sizeof(char));
-            strcpy((*serv)->succ2_IP, ip);
+          /* if it is to reply through udp connection */
+          if((*serv)->udp_reply == 1) {
+            struct sockaddr_in addr;
+            socklen_t addrlen = sizeof(addr);
+            char msg[128];
 
-            (*serv)->succ2_TCP = realloc((*serv)->succ2_TCP, (strlen(port)+1) * sizeof(char));
-            strcpy((*serv)->succ2_TCP, port);
+            sprintf(msg, "EKEY %d %d %s %s\n", target_key, server_key, ip, port);
+            n = sendto((*serv)->fd_udpS, msg, strlen(msg), 0, (struct sockaddr*)&addr, addrlen);
+            if(n==-1) {
+               perror("(UDP) Error occurred in sending");
+               exit(1);
+            }
+            printf("(UDP) Message to be sent: %s\n", msg);
+
+            (*serv)->udp_reply = 0;
           }
-
         }
 
-        else if (strcmp(first, "NEW") == 0) {
-          close((*serv)->fd_tcpC);
+        else {
 
-          /* Save first my old successor to 2nd successor */
-          (*serv)->succ2_key = (*serv)->succ_key;
-          (*serv)->succ2_IP = realloc((*serv)->succ2_IP, (strlen((*serv)->succ_IP)+1) * sizeof(char));
-          strcpy((*serv)->succ2_IP, (*serv)->succ_IP);
-          (*serv)->succ2_TCP = realloc((*serv)->succ2_TCP, (strlen((*serv)->succ_TCP)+1) * sizeof(char));
-          strcpy((*serv)->succ2_TCP, (*serv)->succ_TCP);
 
-          /* Save my new successor */
-          (*serv)->succ_key = key;
-          (*serv)->succ_IP = realloc((*serv)->succ_IP, (strlen(ip)+1) * sizeof(char));
-          strcpy((*serv)->succ_IP, ip);
-          (*serv)->succ_TCP = realloc((*serv)->succ_TCP, (strlen(port)+1) * sizeof(char));
-          strcpy((*serv)->succ_TCP, port);
+          sscanf(buffer, "%s %d %s %s", first, &key, ip, port);
 
-          (*serv)->fd_tcpC = init_tcp_client(&(*serv), &rfds, "SUCC");
+          /* Save my 2nd succesor info */
+          if (strcmp(first, "SUCC") == 0){
+
+            if(key != (*serv)->succ_key) {
+              (*serv)->succ2_key = key;
+              (*serv)->succ2_IP = realloc((*serv)->succ2_IP, (strlen(ip)+1) * sizeof(char));
+              strcpy((*serv)->succ2_IP, ip);
+
+              (*serv)->succ2_TCP = realloc((*serv)->succ2_TCP, (strlen(port)+1) * sizeof(char));
+              strcpy((*serv)->succ2_TCP, port);
+            }
+
+          }
+
+          else if (strcmp(first, "NEW") == 0) {
+            close((*serv)->fd_tcpC);
+
+            /* Save first my old successor to 2nd successor */
+            (*serv)->succ2_key = (*serv)->succ_key;
+            (*serv)->succ2_IP = realloc((*serv)->succ2_IP, (strlen((*serv)->succ_IP)+1) * sizeof(char));
+            strcpy((*serv)->succ2_IP, (*serv)->succ_IP);
+            (*serv)->succ2_TCP = realloc((*serv)->succ2_TCP, (strlen((*serv)->succ_TCP)+1) * sizeof(char));
+            strcpy((*serv)->succ2_TCP, (*serv)->succ_TCP);
+
+            /* Save my new successor */
+            (*serv)->succ_key = key;
+            (*serv)->succ_IP = realloc((*serv)->succ_IP, (strlen(ip)+1) * sizeof(char));
+            strcpy((*serv)->succ_IP, ip);
+            (*serv)->succ_TCP = realloc((*serv)->succ_TCP, (strlen(port)+1) * sizeof(char));
+            strcpy((*serv)->succ_TCP, port);
+
+            (*serv)->fd_tcpC = init_tcp_client(&(*serv), &rfds, "SUCC");
+          }
         }
       }
     }

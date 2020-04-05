@@ -6,7 +6,9 @@
 
 /******************************** DÚVIDAS ********************************
 1- A aplicação deve aceitar o comando exit sem que se tenha feito leave ?
-2-
+2- Nas comunicações UDP não tem de haver um terminador \n, pois não?
+3- Quando o cliente udp faz o pedido pode-se assumir que enquanto não chega a
+    resposta não se pode fazer nada (bloqueio no recvfrom)? ACHO QUE NÃO!
 ****************************************************************************/
 
 
@@ -50,7 +52,7 @@ int main(int argc, char *argv[]) {
   int left = 1;
   int entry = 0;
 
-  int maxfd, fd_parent, fd_pred=0, fd_tcpC=0;
+  int maxfd, fd_parent, fd_pred=0, fd_tcpC=0, fd_updS = 0;
   fd_set readfds;
 
   int delegate;
@@ -110,6 +112,9 @@ int main(int argc, char *argv[]) {
     FD_SET(fd_parent, &readfds);
     maxfd = fd_parent;
 
+    FD_SET(fd_updS, &readfds);
+    maxfd = max(maxfd,fd_updS);
+
     FD_SET(fd_pred, &readfds);
     maxfd = max(maxfd,fd_pred);
 
@@ -137,6 +142,7 @@ int main(int argc, char *argv[]) {
           serv = newr(atoi(args[1]), ip, port); /* new ring/server creation */
 
           /* Init TCP sessions */
+          fd_updS = init_udp_server(port, &serv);
           init_tcp_server(port, &serv, fd_parent); /* The TCP server initialized */
           fd_tcpC = init_tcp_client(&serv, &readfds, "NEW"); /* TCP session with succ (with myself), I'm also client */
 
@@ -151,7 +157,7 @@ int main(int argc, char *argv[]) {
 
         if(serv == NULL) printf("No ring created!\n");
         else if(!left || entry) printf("You cannot do an 'entry' command!\n");
-        if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'entry <i> <boot> <boot.IP> <boot.TCP>'?\n");
+        else if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'entry <i> <boot> <boot.IP> <boot.TCP>'?\n");
         else {
           /* entry server stuff here */
           init_udp_client(&serv, args[3], args[4]);
@@ -250,6 +256,7 @@ int main(int argc, char *argv[]) {
       tcpS_recv(&serv, readfds);
       fd_pred = tcpS(&serv, readfds);
       fd_tcpC= tcpC(&serv, readfds);
+      udpS(&serv, readfds);
 
       f = 1;
     }
