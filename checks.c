@@ -98,7 +98,7 @@ int check_Port(char* p) {
 
 int checkCommand_NEW_FIND(char* token ) { // mode indicates if the command is new or find
 
-  args = (char**) malloc(3 * sizeof(char*));
+  args = (char**) realloc(args, 3 * sizeof(char*));
   args[0] = token;
 
   int i = 1;
@@ -142,7 +142,7 @@ int checkCommand_NEW_FIND(char* token ) { // mode indicates if the command is ne
 int checkCommand_S_ENTRY(char* token)
 {
 
-  args = (char**) malloc(6 * sizeof(char*));
+  args = (char**) realloc(args, 6 * sizeof(char*));
   args[0] = token;
 
 

@@ -52,10 +52,11 @@ int main(int argc, char *argv[]) {
   int left = 1;
   int entry = 0;
 
-  int maxfd, fd_parent, fd_pred=0, fd_tcpC=0, fd_updS = 0;
+  int maxfd=0, fd_parent=0, fd_pred=0, fd_tcpC=0, fd_updS=0;
   fd_set readfds;
 
   int delegate;
+
   /* validating the initiating command: ./dkt <ip> <port> */
   if(argc != 3) {
     printf("\nThe command must be in format './dkt <ip> <port>'\n\n");
@@ -150,7 +151,6 @@ int main(int argc, char *argv[]) {
 
           printf("A new ring has been created!\n");
         }
-        free(args);
       }
 
       else if(strncmp(token, "entry", 5) == 0){
@@ -167,7 +167,6 @@ int main(int argc, char *argv[]) {
           entry = 1;
           left = 0;
         }
-        free(args);
       }
 
       else if(strncmp(token, "sentry", 5) == 0){
@@ -187,7 +186,6 @@ int main(int argc, char *argv[]) {
             left = 0;
           }
         }
-        free(args);
       }
 
       else if(strcmp(token, "leave\n") == 0){
@@ -203,7 +201,6 @@ int main(int argc, char *argv[]) {
           left = 1;
           entry = 0;
         }
-        free(args);
       }
 
       else if(strcmp(token, "show\n") == 0){
@@ -236,14 +233,17 @@ int main(int argc, char *argv[]) {
           }
 
         }
-        free(args);
       }
 
       else if(strcmp(token, "exit\n") == 0 && left == 1) printf("You closed the application!\n\n");
 
+
       else if(strcmp(token, "exit\n") == 0 && left == 0) printf("You must leave the ring first!\n");
 
+
       else printf("Command not found!\n");
+
+      if (args != NULL ) free(args);
 
       f = 1;
       continue;
@@ -264,6 +264,8 @@ int main(int argc, char *argv[]) {
 
   /* exit and deallocate all memory */
   freeServer(&serv);
+  free(port);
+  free(ip);
 
   return 0;
 }
