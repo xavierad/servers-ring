@@ -413,10 +413,13 @@ int init_udp_server(char *port, server **serv)
 int init_udp_client(server **serv, char *ip, char *port)
 {
   struct addrinfo hints,*res;
-  int fd,errcode, received = 0;
-  ssize_t n;
   struct sockaddr_in addr;
+  struct timeval timeout;
   socklen_t addrlen;
+  ssize_t n;
+  fd_set rfds;
+
+  int fd,errcode,  maxtries = 5, i;
   char msg[128], buffer[128];
 
   fd = socket(AF_INET, SOCK_DGRAM, 0);//UDP socket
@@ -424,6 +427,9 @@ int init_udp_client(server **serv, char *ip, char *port)
     perror("(UDP) An error occurred on socket() function!");
     exit(1);
   }
+
+  FD_ZERO(&rfds);
+	FD_SET(fd, &rfds);
 
   memset(&hints, 0, sizeof hints);
   hints.ai_family = AF_INET;//IPv4
@@ -437,44 +443,60 @@ int init_udp_client(server **serv, char *ip, char *port)
 
   /* after initiating udp client, message can be sent immediately
   and listen for response */
-  sprintf(msg, "EFND %d\n", (*serv)->node_key);
-  n = sendto(fd, msg, strlen(msg), 0, res->ai_addr, res->ai_addrlen);
-  if(n==-1) {
-     perror("(UDP) Error occurred in sending");
-     exit(1);
-  }
-  printf("(UDP) Message to be sent: %s\n", msg);
+  for(i = 0; i < maxtries; i++) {
 
-  addrlen=sizeof(addr);
-  n=recvfrom(fd, buffer, 128, 0, (struct sockaddr*)&addr, &addrlen);
-  if(n==-1) {
-    perror("(UPD) Error on reading");
-    exit(0);
-  }
-  printf("(UDP) Message received: %s\n", buffer);
-
-  received = 1;
-
-  /* Reading the buffer until the '\n' character */
-  for (int i = 0; i < strlen(buffer); i++) {
-    if(buffer[i] == '\n' && i < (strlen(buffer) - 1)) {
-      buffer[i+1] = '\0';
+    sprintf(msg, "EFND %d\n", (*serv)->node_key);
+    n = sendto(fd, msg, strlen(msg), 0, res->ai_addr, res->ai_addrlen);
+    if(n==-1) {
+       perror("(UDP) Error occurred in sending");
+       exit(1);
     }
-  }
+    printf("(UDP) (Attempt %d/5) ", i+1);
+    printf("Message to be sent: %s\n", msg);
 
-  if(buffer[0] == 'E') {
-    char first[20], succ_ip[20], succ_port[20];
-    int key, succ_key;
+    timeout.tv_sec=1;
+		timeout.tv_usec=0;
 
-    sscanf(buffer, "%s %d %d %s %s", first, &key, &succ_key, succ_ip, succ_port);
-    if(strcmp(first, "EKEY") == 0) {
-      /* SENTRY made after this function is called in main*/
-      update_state(&(*serv), key, succ_key, succ_ip, succ_port);
+		n=select(fd+1, &rfds, (fd_set*) NULL, (fd_set*) NULL, &timeout);
+    if(n==-1){
+			perror("(UDP) Select error");
+			exit(1);
+		}
+
+    if(FD_ISSET(fd, &rfds)) {
+
+      addrlen=sizeof(addr);
+      n=recvfrom(fd, buffer, 128, 0, (struct sockaddr*)&addr, &addrlen);
+      if(n==-1) {
+        perror("(UPD) Error on reading");
+        exit(0);
+      }
+      printf("(UDP) Message received: %s\n", buffer);
+
+      /* Reading the buffer until the '\n' character */
+      for (int i = 0; i < strlen(buffer); i++) {
+        if(buffer[i] == '\n' && i < (strlen(buffer) - 1)) {
+          buffer[i+1] = '\0';
+        }
+      }
+
+      if(buffer[0] == 'E') {
+        char first[20], succ_ip[20], succ_port[20];
+        int key, succ_key;
+
+        sscanf(buffer, "%s %d %d %s %s", first, &key, &succ_key, succ_ip, succ_port);
+        if(strcmp(first, "EKEY") == 0) {
+          /* SENTRY made after this function is called in main*/
+          update_state(&(*serv), key, succ_key, succ_ip, succ_port);
+        }
+      }
+      return 1;
     }
   }
   freeaddrinfo(res);
 
-  return received;
+  printf("Message not delivered!\n");
+  return 0;
 }
 
 /*******************************************************************************
