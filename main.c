@@ -46,9 +46,10 @@ int main(int argc, char *argv[]) {
   char *port = NULL; // port to be used  */
   server *serv = NULL; // struct server to allocate its state
 
-  /* Auxiliary variables: flags to know when server is left or entered */
-  int left = 1;
-  int entry = 0;
+  /* Auxiliary variables: flags to know when server has left or entered */
+  //int left = 1;
+  //int entry = 0;
+  int inside = 0;
 
   /* File descriptors to be set in readfds vector */
   int maxfd=0, fd_parent=0, fd_pred=0, fd_tcpC=0, fd_updS=0;
@@ -96,8 +97,9 @@ int main(int argc, char *argv[]) {
   /* Initialization of TCP socket */
   fd_parent = init_fd_parent();
 
-  /* application loop, while the user do not enter "exit" and not left */
-  while(strcmp(cmd, "exit\n") != 0 || left != 1){
+  /* application loop, while the user does not enter "exit" or not left */
+  //while(strcmp(cmd, "exit\n") != 0 || left != 1){
+  while(strcmp(cmd, "exit\n") != 0 || inside == 1){
 
     memset(cmd, '\0', sizeof(cmd)); // setting all values of cmd
 
@@ -150,8 +152,6 @@ int main(int argc, char *argv[]) {
 
           fd_updS = init_udp_server(port, &serv);
 
-          left = 0;
-
           printf("A new ring has been created!\n");
         }
       }
@@ -159,26 +159,28 @@ int main(int argc, char *argv[]) {
       else if(strncmp(token, "entry", 5) == 0){
 
         if(serv == NULL) printf("No ring created!\n");
-        else if(!left || entry) printf("You cannot do an 'entry' command!\n"); // because the server did not leave or already entered
+        //else if(!left || entry) printf("You cannot do an 'entry' command!\n"); // because the server did not leave or already entered
+        else if(inside) printf("You cannot do an 'entry' command!\n"); // because the server did not leave or already entered
         else if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'entry <i> <boot> <boot.IP> <boot.TCP>'?\n");
         else {
 
           /* Entry server stuff here: initializes an UDP connection with boot and if got any response initialize TCP with future successor */
-          if(init_udp_client(&serv, args[3], args[4] == 1){
+          if(init_udp_client(&serv, args[3], args[4]) == 1){
 
             fd_tcpC = init_tcp_client(&serv, &readfds, "NEW"); // init TCP with known successor
 
             printf("The new server has entered!\n");
-            entry = 1;
-            left = 0;
+            //entry = 1;
+            //left = 0;
+            inside = 1;
           }
         }
       }
 
       else if(strncmp(token, "sentry", 5) == 0){
-
         if(serv == NULL) printf("No ring created!\n");
-        else if(!left || entry) printf("You cannot do a 'sentry' command!\n"); // because the server did not leave or already entered
+        //else if(!left || entry) printf("You cannot do a 'sentry' command!\n"); // because the server did not leave or already entered
+        else if(inside) printf("You cannot do a 'sentry' command!\n"); // because the server did not leave or already entered
         else if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'sentry <i> <succi> <succi.IP> <succi.TCP>'?\n");
         else {
 
@@ -189,15 +191,17 @@ int main(int argc, char *argv[]) {
             fd_tcpC = init_tcp_client(&serv, &readfds, "NEW");
 
             printf("The new server has entered!\n");
-            entry = 1;
-            left = 0;
+            //entry = 1;
+            //left = 0;
+            inside = 1;
           }
         }
       }
 
       else if(strcmp(token, "leave\n") == 0){
         if(serv == NULL) printf("No ring created!\n");
-        else if(left) printf("Already letf!\n");
+        //else if(left) printf("Already letf!\n");
+        else if(!inside) printf("Server is not part of a ring!\n");
         else {
 
           /* Leave ring stuff here */
@@ -208,8 +212,9 @@ int main(int argc, char *argv[]) {
           fd_tcpC = 0;
 
           printf("Server left!\n");
-          left = 1;
-          entry = 0;
+          //left = 1;
+          //entry = 0;
+          inside = 0;
         }
       }
 
@@ -246,10 +251,12 @@ int main(int argc, char *argv[]) {
         }
       }
 
-      else if(strcmp(token, "exit\n") == 0 && left == 1) printf("You closed the application!\n\n");
+      //else if(strcmp(token, "exit\n") == 0 && left == 1) printf("You closed the application!\n\n");
+      else if(strcmp(token, "exit\n") == 0 &&  inside == 0) printf("You closed the application!\n\n");
 
 
-      else if(strcmp(token, "exit\n") == 0 && left == 0) printf("You must leave the ring first!\n");
+      //else if(strcmp(token, "exit\n") == 0 && left == 0) printf("You must leave the ring first!\n");
+      else if(strcmp(token, "exit\n") == 0 && inside == 1) printf("You must leave the ring first!\n");
 
 
       else printf("Command not found!\n");
