@@ -5,10 +5,7 @@
 */
 
 /******************************** DÚVIDAS ********************************
-1- A aplicação deve aceitar o comando exit sem que se tenha feito leave ?
-2- Nas comunicações UDP não tem de haver um terminador \n, pois não?
-3- Quando o cliente udp faz o pedido pode-se assumir que enquanto não chega a
-    resposta não se pode fazer nada (bloqueio no recvfrom)? ACHO QUE NÃO!
+
 ****************************************************************************/
 
 
@@ -32,30 +29,30 @@
 
 
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////  MAIN  ///////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
+/******************************************************************************
+*********************************** MAIN **************************************
+******************************************************************************/
 
 int main(int argc, char *argv[]) {
 
-  int f = 1; /* flag to print out "\n >" in the while loop*/
+  int f = 1; // flag to print out "\n >" in the while loop
 
   /* Command variables */
-  char cmd[255] = {'\0'}; /* string that receives commands */
-  char *token = NULL; /* auxiliary string that receives cmd splitted, takes all its arguments */
+  char cmd[255] = {'\0'}; // string that receives commands */
+  char *token = NULL; // auxiliary string that receives cmd splitted, takes all its arguments */
 
   /* Server variables */
-  char *ip = NULL; /* IP address of the local server */
-  char *port = NULL; /* port to be used  */
-  server *serv = NULL; /* struct server to allocate its state */
+  char *ip = NULL; // IP address of the local server
+  char *port = NULL; // port to be used  */
+  server *serv = NULL; // struct server to allocate its state
 
+  /* Auxiliary variables: flags to know when server is left or entered */
   int left = 1;
   int entry = 0;
 
+  /* File descriptors to be set in readfds vector */
   int maxfd=0, fd_parent=0, fd_pred=0, fd_tcpC=0, fd_updS=0;
   fd_set readfds;
-
-  int delegate;
 
   /* validating the initiating command: ./dkt <ip> <port> */
   if(argc != 3) {
@@ -89,26 +86,29 @@ int main(int argc, char *argv[]) {
     if(check_Port(port) == 0) exit(1);
     strtok(port, "\n");
 
-    /* Everything is OK! */
+    /* Everything is OK! Let's begin with the application */
     printf("\n____________________________________________________________\n");
     printf("\nApplication initialized!\n");
     printf("\n-IP addr.: %s\n-PORT: %s\n\n", ip, port);
 
   }
+
+  /* Initialization of TCP socket */
   fd_parent = init_fd_parent();
 
-  /* application loop */
+  /* application loop, while the user do not enter "exit" and not left */
   while(strcmp(cmd, "exit\n") != 0 || left != 1){
 
-    memset(cmd, '\0', sizeof(cmd)); /* setting all values of cmd */
+    memset(cmd, '\0', sizeof(cmd)); // setting all values of cmd
 
     if(f == 1) printf("\n > ");
 	  fflush(stdout);
 
     f = 0;
 
-    FD_ZERO(&readfds);          /* initialize the fd set */
-    FD_SET(0, &readfds);        /* add stdin fd (0) */
+    /* Adding the file descriptors into readfds and determine maxfd for the select */
+    FD_ZERO(&readfds);  // initialize the fd set
+    FD_SET(0, &readfds); // add stdin fd (0)
 
     FD_SET(fd_parent, &readfds);
     maxfd = fd_parent;
@@ -124,13 +124,15 @@ int main(int argc, char *argv[]) {
 
     if (select(maxfd+1, &readfds, (fd_set*) NULL, (fd_set*) NULL, (struct timeval*) NULL) < 0) {
       perror("ERROR in select");
+      exit(1);
     }
 
+    /* If a command is typed */
     if (FD_ISSET(0, &readfds)) {
 
       fgets(cmd, 255, stdin);
 
-      token = strtok(cmd, " "); /* retrieve each argument of cmd, separated by a space */
+      token = strtok(cmd, " "); // retrieve each argument of cmd, separated by a space
 
       /* validating the commands */
       if(strcmp(token, "new") == 0){
@@ -140,14 +142,15 @@ int main(int argc, char *argv[]) {
         else
         {
           /* Ring (Server) creation stuff here */
-          serv = newr(atoi(args[1]), ip, port); /* new ring/server creation */
+          serv = newr(atoi(args[1]), ip, port); // new ring/server creation
 
-          /* Init TCP sessions */
+          /* Init TCP and UDP sessions */
+          init_tcp_server(port, &serv, fd_parent); // The TCP server initialized
+          fd_tcpC = init_tcp_client(&serv, &readfds, "NEW"); // TCP session with succ (with myself), I'm also client
+
           fd_updS = init_udp_server(port, &serv);
-          init_tcp_server(port, &serv, fd_parent); /* The TCP server initialized */
-          fd_tcpC = init_tcp_client(&serv, &readfds, "NEW"); /* TCP session with succ (with myself), I'm also client */
 
-
+          left = 0;
 
           printf("A new ring has been created!\n");
         }
@@ -156,31 +159,35 @@ int main(int argc, char *argv[]) {
       else if(strncmp(token, "entry", 5) == 0){
 
         if(serv == NULL) printf("No ring created!\n");
-        else if(!left || entry) printf("You cannot do an 'entry' command!\n");
+        else if(!left || entry) printf("You cannot do an 'entry' command!\n"); // because the server did not leave or already entered
         else if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'entry <i> <boot> <boot.IP> <boot.TCP>'?\n");
         else {
-          /* entry server stuff here */
-          init_udp_client(&serv, args[3], args[4]);
-          fd_tcpC = init_tcp_client(&serv, &readfds, "NEW");
 
-          printf("The new server has entered!\n");
-          entry = 1;
-          left = 0;
+          /* Entry server stuff here: initializes an UDP connection with boot and if got any response initialize TCP with future successor */
+          if(init_udp_client(&serv, args[3], args[4] == 1){
+
+            fd_tcpC = init_tcp_client(&serv, &readfds, "NEW"); // init TCP with known successor
+
+            printf("The new server has entered!\n");
+            entry = 1;
+            left = 0;
+          }
         }
       }
 
       else if(strncmp(token, "sentry", 5) == 0){
 
         if(serv == NULL) printf("No ring created!\n");
-        else if(!left || entry) printf("You cannot do a 'sentry' command!\n");
+        else if(!left || entry) printf("You cannot do a 'sentry' command!\n"); // because the server did not leave or already entered
         else if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'sentry <i> <succi> <succi.IP> <succi.TCP>'?\n");
         else {
 
-          /* sentry server stuff here */
-          if(!update_state(&serv, atoi(args[1]), atoi(args[2]), args[3], args[4])) printf("Key %s is not the local!\n", args[1]);
+          /* Sentry server stuff here */
+          if(!update_state(&serv, atoi(args[1]), atoi(args[2]), args[3], args[4])) printf("Key %s is not the local!\n", args[1]); // update successor
           else{
             /* TCP session with known successor */
             fd_tcpC = init_tcp_client(&serv, &readfds, "NEW");
+
             printf("The new server has entered!\n");
             entry = 1;
             left = 0;
@@ -190,13 +197,16 @@ int main(int argc, char *argv[]) {
 
       else if(strcmp(token, "leave\n") == 0){
         if(serv == NULL) printf("No ring created!\n");
+        else if(left) printf("Already letf!\n");
         else {
-          // do leave ring stuff here
 
+          /* Leave ring stuff here */
           leave(&serv);
+
+          /* Resetting values to be set to readfds */
           fd_pred = 0;
           fd_tcpC = 0;
-          //freeServer(&serv);
+
           printf("Server left!\n");
           left = 1;
           entry = 0;
@@ -217,9 +227,10 @@ int main(int argc, char *argv[]) {
         else if(serv == NULL) printf("No ring created!\n");
         else if(atoi(args[1]) >= N ) printf("The maximum key alowed in this ring is %d\n", N-1);
         else {
+
           /* delegate informs if we have to delegate the search of the key */
           if(IsItMine(atoi(args[1]), serv) == 0) {
-            delegate = compare_distance(atoi(args[1]), serv);
+            int delegate = compare_distance(atoi(args[1]), serv);
 
             /* Successor server has the key */
             if(delegate == 0) k_fndinsucc( atoi(args[1]) , serv);
@@ -246,16 +257,22 @@ int main(int argc, char *argv[]) {
       if (args != NULL ) free(args);
 
       f = 1;
+
       continue;
+
     }// if FD_ISSET
 
     if(serv != NULL) {
       printf("\n");
 
-      /* tcpS_recv only knows about fd_pred updated after tcpS returns it */
+      /* tcpS_recv only knows if fd_pred is set or not one loop after tcpS returns its value */
       tcpS_recv(&serv, readfds);
       fd_pred = tcpS(&serv, readfds);
+
+      /* Request messages */
       fd_tcpC= tcpC(&serv, readfds);
+
+      /* listen to possible UDP messages */
       udpS(&serv, readfds);
 
       f = 1;

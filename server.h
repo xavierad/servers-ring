@@ -29,7 +29,7 @@ int init_fd_parent();
 
 int init_udp_server(char *port, server **serv);
 
-void init_udp_client(server **serv, char *ip, char *port);
+int init_udp_client(server **serv, char *ip, char *port);
 
 void init_tcp_server(char* port, server** serv, int fd);
 

@@ -4,47 +4,51 @@
 #include <ctype.h>
 #include "checks.h"
 
-char **args; /* auxiliary array that will contain every arguments after the first */
+/* auxiliary array that will contain every arguments after the first */
+char **args;
 
 
 /*******************************************************************************
- * checkInteger(char *) - CHECKS IF A STRING CONTAINS A NUMBER
+ * checkInteger(char *)
+ *
+ * Description: checks if a string contains a number
  *
  * returns: 1 if in the string there is only integers
             0 if there is some letter
 *******************************************************************************/
-int checkInteger(char *num)
-{
+int checkInteger(char *num) {
 
   int i=0;
   int numDigits = 0;
-  /* here we need also to check if there is any '\n' or '\0' for ensurement */
-  while (i < (strlen(num)-1))
-  {
 
-    if(isdigit(num[i])) numDigits ++; /* when the number is not in [0, 9] */
+  /* here we need also to check if there is any '\n' or '\0' for ensurement */
+  while (i < (strlen(num)-1)) {
+
+    if(isdigit(num[i])) numDigits ++; // when the number is not in [0, 9]
     i++;
   }
+  /* check if all members of the string are digits */
   if(numDigits == (strlen(num)-1)) return 1;
   else return 0;
 }
 
 
 /*******************************************************************************
- * check_IP(char *) - CHECKS IF A STRING IS IN THE FORM OF IP FORMAT
+ * check_IP(char *)
+ *
+ * Description: checks if a string is in the form of IP format
  *
  * returns: 1 if it is in the wright format
             2 otherwise
 *******************************************************************************/
 int check_IP(char* s) {
 
-
     char *auxs = malloc((strlen(s)+1) * sizeof(char));
 
     strcpy(auxs, s);
     char *token = strtok(auxs, ".");
 
-    //assuming the IP address is the form (X)(X)X.(X)(X)X.(X)(X)X.(X)(X)X
+    /* assuming the IP address is the form (X)(X)X.(X)(X)X.(X)(X)X.(X)(X)X */
     if(strcmp(s, token)==0 || strlen(token)>3) /*not acceptable IP format*/ {
       free(auxs);
       return 1;
@@ -78,6 +82,9 @@ int check_IP(char* s) {
  * check_Port(char *) - CHECKS IF A STRING IS CONTAINS AN INTGER BETWEEN
                           (2^10 + 1) AND 2^16
  *
+ * Description: checks if a string contains an integer between (2^10 + 1) and
+                2^16 (allowed range of ports)
+ *
  * returns: 1 if it is in the above interval
             0 otherwise
 *******************************************************************************/
@@ -96,7 +103,17 @@ int check_Port(char* p) {
 }
 
 
-int checkCommand_NEW_FIND(char* token ) { // mode indicates if the command is new or find
+/*******************************************************************************
+ * checkCommand_NEW_FIND(char* )
+ *
+ * Description: checks if the command has the number of arguments required (2)
+                  and each of them satisfies the requirements;
+                For NEW and FIND commands
+ *
+ * returns: 1 the command satisfies all requirements
+            0 otherwise
+*******************************************************************************/
+int checkCommand_NEW_FIND(char* token ) {
 
   args = (char**) realloc(args, 3 * sizeof(char*));
   args[0] = token;
@@ -107,8 +124,7 @@ int checkCommand_NEW_FIND(char* token ) { // mode indicates if the command is ne
     args[i] = token;
 
     i++;
-    if(i > 2)
-    {
+    if(i > 2) {
       printf("Too many arguments!\n");
       break;
       return 0;
@@ -128,7 +144,9 @@ int checkCommand_NEW_FIND(char* token ) { // mode indicates if the command is ne
       printf("Second argument is not an integer.\n");
       return 0; /*error*/
     }
-    return 1; /*OK*/
+
+    /*OK*/
+    return 1;
   }
   else
   {
@@ -138,13 +156,20 @@ int checkCommand_NEW_FIND(char* token ) { // mode indicates if the command is ne
 }
 
 
-//Checks the inputs for commands entry and sentry
-int checkCommand_S_ENTRY(char* token)
-{
+/*******************************************************************************
+ * checkCommand_S_ENTRY(char* )
+ *
+ * Description: checks if the command has the number of arguments required (5)
+                  and each of them satisfies the requirements;
+                For SENTRY and ENTRY commands
+ *
+ * returns: 1 the command satisfies all requirements
+            0 otherwise
+*******************************************************************************/
+int checkCommand_S_ENTRY(char* token) {
 
   args = (char**) realloc(args, 6 * sizeof(char*));
   args[0] = token;
-
 
   int i = 1;
   for ( ; (token = strtok(NULL, " ")); /*token != NULL*/)
@@ -199,6 +224,6 @@ int checkCommand_S_ENTRY(char* token)
     return 0; /*error*/
   }
 
-
-  return 1; /*OK*/
+  /*OK*/
+  return 1;
 }

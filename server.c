@@ -354,7 +354,13 @@ int init_fd_parent () {
   return fd;
 }
 
-
+/*******************************************************************************
+ * init_udp_server(char* , server** )
+ *
+ * Description: opens a UDP server with socket fd, does not receive messages
+ *
+ * returns: fd to be set in main
+*******************************************************************************/
 int init_udp_server(char *port, server **serv)
 {
   printf("Initiating UDP server ...\n");
@@ -369,6 +375,7 @@ int init_udp_server(char *port, server **serv)
     exit(1);
   }
 
+  /* Save fd to structure in order to get its access for receiving */
   (*serv)->fd_udpS = fd;
 
   memset(&hints,0,sizeof hints);
@@ -392,10 +399,21 @@ int init_udp_server(char *port, server **serv)
 }
 
 
-void init_udp_client(server **serv, char *ip, char *port)
+/*******************************************************************************
+ * create_udp_client(server** ,char* , char* )
+ *
+ * Description: creates a UDP client, sends a request message and make some
+                  tries to handle possible lost packages;
+                The fd is not set in main because it is not needed, this a
+                  temporary connection
+ *
+ * returns: 1 if got server response (received)
+            0 otherwise (not received)
+*******************************************************************************/
+int init_udp_client(server **serv, char *ip, char *port)
 {
   struct addrinfo hints,*res;
-  int fd,errcode;
+  int fd,errcode, received = 0;
   ssize_t n;
   struct sockaddr_in addr;
   socklen_t addrlen;
@@ -435,6 +453,8 @@ void init_udp_client(server **serv, char *ip, char *port)
   }
   printf("(UDP) Message received: %s\n", buffer);
 
+  received = 1;
+
   /* Reading the buffer until the '\n' character */
   for (int i = 0; i < strlen(buffer); i++) {
     if(buffer[i] == '\n' && i < (strlen(buffer) - 1)) {
@@ -453,6 +473,8 @@ void init_udp_client(server **serv, char *ip, char *port)
     }
   }
   freeaddrinfo(res);
+
+  return received;
 }
 
 /*******************************************************************************
@@ -606,7 +628,16 @@ int init_tcp_client(server** serv, fd_set *rfds, char *mode) {
   return fd;
 }
 
-
+/*******************************************************************************
+ * tcpS(server** , fd_set )
+ *
+ * Description: Listens to any new UDP message, if the message is readable, find
+                  for the clients successor;
+                The search process is made with DelegateSearchLocal and the UDP
+                  response with tcpS (next function)
+ *
+ * returns: void
+*******************************************************************************/
 void udpS(server** serv, fd_set rfds) {
 
   char buffer[128];
@@ -659,11 +690,10 @@ void udpS(server** serv, fd_set rfds) {
 
           /* delegate the search to successor */
           else{
-            /* the server must reply through UDP */
+            /* the server must reply through UDP in tcpS */
             (*serv)->udp_reply = 1;
             DelegateSearchLocal((*serv), target_key);
           }
-
 
         }
         else {
@@ -724,9 +754,8 @@ int tcpS(server** serv, fd_set rfds) {
         }
       }
 
-      printf("Message received from new client: "/*, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), newfd*/);
+      printf("Message received from new client: ");
       printf("%s\n",buffer);
-      // NOTA: INTERPRETAR O BUFFER COM SSCANF, QUE TIPO DE MENSAGEM É, VER A QUESTÃO DO \n (no 'for' de cima)
 
       /* If incoming message is the type of KEY ..., some server has found the key*/
       if(buffer[0] == 'K') {
