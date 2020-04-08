@@ -5,7 +5,8 @@
 */
 
 /******************************** DÚVIDAS ********************************
-
+1- sentry ou entry feito por algum dos servidores de um anel criado (com pelo menos dois servidores) ?
+2- SIGPIPE ?
 ****************************************************************************/
 
 
@@ -15,21 +16,20 @@
 1- Acabar a verificação de comandos (interface), mensagens (pesquisa de chava, saída, entrada)
 2- Falta check IP e port nos comandos sentry e entry
 3- Condições de erro nas chamadas de sistema (ver os restantes pontos logo antes à bibliografia)
-4-
+4- prevenir o sentry ou o entry quando existe o anel criado (pelo menos um sucessor que não seja o local)
 ****************************************************************************/
 
 
 /**************** PROJETO DE RCI - 2º SEMESTRE 2019/2020 **********************
- *
  * Feito por: Miguel Carvalho    nº 84141
  *            Xavier Dias        nº 87136
- *
  ******************************************************************************/
 
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 #include "checks.h"
 #include "server.h"
@@ -42,6 +42,8 @@
 ******************************************************************************/
 
 int main(int argc, char *argv[]) {
+
+  struct sigaction act;
 
   int f = 1; // flag to print out "\n >" in the while loop
 
@@ -95,9 +97,24 @@ int main(int argc, char *argv[]) {
 
     /* Everything is OK! Let's begin with the application */
     printf("\n____________________________________________________________\n");
-    printf("\nApplication initialized!\n");
-    printf("\n-IP addr.: %s\n-PORT: %s\n\n", ip, port);
+    printf("\n APPLICATION INITIALIZED!");
+    printf(" | IP addr.: %s  PORT: %s\n", ip, port);
+    printf("\n COMMANDS:\n"
+    "\n - <new (i)>\n   FOR A NEW SERVER (IT WILL OPEN A TCP CONNECTION WITH HIMSELF FIRST);\n"
+    "\n - <sentry (i) (succ) (succ.IP) (succ.TCP)>\n   TO ENTRY IN A RING KNOWING THE FUTURE SUCCESSOR;\n"
+    "\n - <entry (i) (boot) (boot.IP) (boot.TCP)>\n   TO ENTRY IN A RING WHERE SERVER WITH BOOT KEY WILL FIND FOR FUTURES SUCCESSOR;\n"
+    "\n - <find (j)>\n   TO FIND SOME KEY AND TO KNOW TO WHICH SERVER IT BELONGS;\n"
+    "\n - <show>\n   TO SHOW ALL SERVER STATE INFO CONCERNING THE LOCAL, SUCCESSOR AND SECOND SUCCESSOR SERVER;\n"
+    "\n - <leave>\n   TO LEAVE THE RING;\n"
+    "\n - <exit>\n   TO EXIT THE APPLICATION (LEAVE IS REQUIRED FIRST).\n"
+  );
+  }
 
+  memset(&act, 0, sizeof act);
+  act.sa_handler = SIG_IGN;
+  if(sigaction(SIGPIPE, &act, NULL) == -1) {
+    perror("Erro in sigaction()");
+    exit(1);
   }
 
   /* Initialization of TCP socket */

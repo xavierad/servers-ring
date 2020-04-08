@@ -1,8 +1,19 @@
+/******************************************************************************
+checks.c file:
+
+This file contains all functions related to commands. The aim of these functions
+is to interpret commands and accept or not them according to specified
+requirements
+******************************************************************************/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include "checks.h"
+
+
 
 /* auxiliary array that will contain every arguments after the first */
 char **args;

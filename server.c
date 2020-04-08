@@ -1,3 +1,11 @@
+/******************************************************************************
+server.c file:
+
+This file contains all functions related to the local server, the definition
+of the server structure where its info state will be recorded and to
+communications. The list of the can be found in server.h file.
+*******************************************************************************/
+
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,13 +17,23 @@
 #include <string.h>
 #include "server.h"
 
-/* Ideias para as comunicações
-Um nó será servidor e cliente.
-Portanto, do ponto de vista de servidor, estará a ouvir no seu porto, corre tcpS.
-Eventualmente terá que responder ao cliente, mas para isso é necessário saber
-que pedido é. O servidor terá que gurdar o porto com o predecessor e do sucessor (será que do pred sim?)
-Do ponto de vista de cliente, terá que saber o porto tcp etc do seu servidor, sucessor.
-Faz pedidos ao seu sucessor.
+/*
+- Main ideas for communications:
+One node machine will be both server and client. Initially the local node will
+be its successor (server) or predecessor (client) and 2nd successor as well.
+
+When a new server is created (new command) TCP client/server and UDP server are
+initialized.
+
+So, in the server point of view, it will listen in its port and runs tcpS()
+function to accept only new connections. Here is where all new info is saved.
+Eventually it has to make a response. For old clients, identified by its socket,
+the messages are received and interpreted in tcpS_recv() function and
+eventually has to make a response.
+
+In the client point of view, it must know the IP and port of the successor
+(server). It makes requests through
+
 */
 
 
@@ -761,7 +779,7 @@ int tcpS(server** serv, fd_set rfds) {
       perror("An error occurred on accept() function");
       exit(1);
     }
-    printf("New connection %s:%d with fd: %d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port), newfd);
+    printf("New connection %s:%d \n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
     if((n = read(newfd, buffer, 128))!=0){
       if(n == -1) {
