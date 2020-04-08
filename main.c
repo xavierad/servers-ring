@@ -18,6 +18,14 @@
 4-
 ****************************************************************************/
 
+
+/**************** PROJETO DE RCI - 2º SEMESTRE 2019/2020 **********************
+ *
+ * Feito por: Miguel Carvalho    nº 84141
+ *            Xavier Dias        nº 87136
+ *
+ ******************************************************************************/
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -46,9 +54,7 @@ int main(int argc, char *argv[]) {
   char *port = NULL; // port to be used  */
   server *serv = NULL; // struct server to allocate its state
 
-  /* Auxiliary variables: flags to know when server has left or entered */
-  //int left = 1;
-  //int entry = 0;
+  /* Auxiliary variable: flag to know when server has left or entered */
   int inside = 0;
 
   /* File descriptors to be set in readfds vector */
@@ -159,7 +165,6 @@ int main(int argc, char *argv[]) {
       else if(strncmp(token, "entry", 5) == 0){
 
         if(serv == NULL) printf("No ring created!\n");
-        //else if(!left || entry) printf("You cannot do an 'entry' command!\n"); // because the server did not leave or already entered
         else if(inside) printf("You cannot do an 'entry' command!\n"); // because the server did not leave or already entered
         else if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'entry <i> <boot> <boot.IP> <boot.TCP>'?\n");
         else {
@@ -170,8 +175,6 @@ int main(int argc, char *argv[]) {
             fd_tcpC = init_tcp_client(&serv, &readfds, "NEW"); // init TCP with known successor
 
             printf("The new server has entered!\n");
-            //entry = 1;
-            //left = 0;
             inside = 1;
           }
         }
@@ -179,7 +182,6 @@ int main(int argc, char *argv[]) {
 
       else if(strncmp(token, "sentry", 5) == 0){
         if(serv == NULL) printf("No ring created!\n");
-        //else if(!left || entry) printf("You cannot do a 'sentry' command!\n"); // because the server did not leave or already entered
         else if(inside) printf("You cannot do a 'sentry' command!\n"); // because the server did not leave or already entered
         else if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'sentry <i> <succi> <succi.IP> <succi.TCP>'?\n");
         else {
@@ -191,8 +193,6 @@ int main(int argc, char *argv[]) {
             fd_tcpC = init_tcp_client(&serv, &readfds, "NEW");
 
             printf("The new server has entered!\n");
-            //entry = 1;
-            //left = 0;
             inside = 1;
           }
         }
@@ -200,7 +200,6 @@ int main(int argc, char *argv[]) {
 
       else if(strcmp(token, "leave\n") == 0){
         if(serv == NULL) printf("No ring created!\n");
-        //else if(left) printf("Already letf!\n");
         else if(!inside) printf("Server is not part of a ring!\n");
         else {
 
@@ -212,8 +211,6 @@ int main(int argc, char *argv[]) {
           fd_tcpC = 0;
 
           printf("Server left!\n");
-          //left = 1;
-          //entry = 0;
           inside = 0;
         }
       }
@@ -251,17 +248,17 @@ int main(int argc, char *argv[]) {
         }
       }
 
-      //else if(strcmp(token, "exit\n") == 0 && left == 1) printf("You closed the application!\n\n");
       else if(strcmp(token, "exit\n") == 0 &&  inside == 0) printf("You closed the application!\n\n");
 
-
-      //else if(strcmp(token, "exit\n") == 0 && left == 0) printf("You must leave the ring first!\n");
       else if(strcmp(token, "exit\n") == 0 && inside == 1) printf("You must leave the ring first!\n");
 
 
       else printf("Command not found!\n");
 
-      if (args != NULL ) free(args);
+      if (args != NULL ){
+        free(args);
+        args = NULL;
+      }
 
       f = 1;
 

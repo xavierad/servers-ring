@@ -442,7 +442,7 @@ int init_udp_client(server **serv, char *ip, char *port)
   }
 
   /* after initiating udp client, message can be sent immediately
-  and listen for response */
+  and listen for response (with 5 attempts)*/
   for(i = 0; i < maxtries; i++) {
 
     sprintf(msg, "EFND %d\n", (*serv)->node_key);
