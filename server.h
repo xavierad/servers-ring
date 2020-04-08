@@ -1,7 +1,7 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#define N 6 // maximum length of the ring
+#define N 16 // maximum length of the ring
 
 typedef struct _server server;
 

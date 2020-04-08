@@ -13,10 +13,11 @@
 
 
 /******************************** FALTA FAZER *********************************
-1- Acabar a verificação de comandos (interface), mensagens (pesquisa de chava, saída, entrada)
-2- Falta check IP e port nos comandos sentry e entry
+2- (Falta check IP e port nos comandos sentry e entry) - à espera do mail do prof
 3- Condições de erro nas chamadas de sistema (ver os restantes pontos logo antes à bibliografia)
 4- prevenir o sentry ou o entry quando existe o anel criado (pelo menos um sucessor que não seja o local)
+5- 
+6-
 ****************************************************************************/
 
 
@@ -56,8 +57,9 @@ int main(int argc, char *argv[]) {
   char *port = NULL; // port to be used  */
   server *serv = NULL; // struct server to allocate its state
 
-  /* Auxiliary variable: flag to know when server has left or entered */
+  /* Auxiliary variables: flags to know when server is inside or has been left */
   int inside = 0;
+  int left = 0;
 
   /* File descriptors to be set in readfds vector */
   int maxfd=0, fd_parent=0, fd_pred=0, fd_tcpC=0, fd_updS=0;
@@ -159,7 +161,9 @@ int main(int argc, char *argv[]) {
 
       token = strtok(cmd, " "); // retrieve each argument of cmd, separated by a space
 
-      /* validating the commands */
+      /* VALIDATING THE COMMANDS */
+
+      /* NEW command */
       if(strcmp(token, "new") == 0){
 
         if(!checkCommand_NEW_FIND(token)) printf("Did you mean something like 'new <i>'?\n");
@@ -179,6 +183,7 @@ int main(int argc, char *argv[]) {
         }
       }
 
+      /* ENTRY command */
       else if(strncmp(token, "entry", 5) == 0){
 
         if(serv == NULL) printf("No ring created!\n");
@@ -193,10 +198,12 @@ int main(int argc, char *argv[]) {
 
             printf("The new server has entered!\n");
             inside = 1;
+            left = 0;
           }
         }
       }
 
+      /* SENTRY command */
       else if(strncmp(token, "sentry", 5) == 0){
         if(serv == NULL) printf("No ring created!\n");
         else if(inside) printf("You cannot do a 'sentry' command!\n"); // because the server did not leave or already entered
@@ -211,13 +218,15 @@ int main(int argc, char *argv[]) {
 
             printf("The new server has entered!\n");
             inside = 1;
+            left = 0;
           }
         }
       }
 
+      /* LEAVE command */
       else if(strcmp(token, "leave\n") == 0){
         if(serv == NULL) printf("No ring created!\n");
-        else if(!inside) printf("Server is not part of a ring!\n");
+        else if(left) printf("Server is not part of a ring!\n");
         else {
 
           /* Leave ring stuff here */
@@ -229,9 +238,11 @@ int main(int argc, char *argv[]) {
 
           printf("Server left!\n");
           inside = 0;
+          left = 1;
         }
       }
 
+      /* SHOW command */
       else if(strcmp(token, "show\n") == 0){
         if(serv == NULL) printf("No ring created!\n");
         else {
@@ -240,6 +251,7 @@ int main(int argc, char *argv[]) {
         }
       }
 
+      /* FIND command */
       else if(strcmp(token, "find") == 0){
 
         if(!checkCommand_NEW_FIND(token)) printf("Did you mean something like 'find <i>'?\n");
@@ -265,10 +277,10 @@ int main(int argc, char *argv[]) {
         }
       }
 
-      else if(strcmp(token, "exit\n") == 0 &&  inside == 0) printf("You closed the application!\n\n");
+      /* EXIT command */
+      else if(strcmp(token, "exit\n") == 0 &&  left == 1) printf("You closed the application!\n\n");
 
-      else if(strcmp(token, "exit\n") == 0 && inside == 1) printf("You must leave the ring first!\n");
-
+      else if(strcmp(token, "exit\n") == 0 && left == 0) printf("You must leave the ring first!\n");
 
       else printf("Command not found!\n");
 
