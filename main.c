@@ -14,9 +14,9 @@
 
 /******************************** FALTA FAZER *********************************
 2- (Falta check IP e port nos comandos sentry e entry) - à espera do mail do prof
-3- Condições de erro nas chamadas de sistema (ver os restantes pontos logo antes à bibliografia)
+3- Verificar se são feitas todas as condições de erro nas chamadas de sistema (ver os restantes pontos logo antes à bibliografia)
 4- prevenir o sentry ou o entry quando existe o anel criado (pelo menos um sucessor que não seja o local)
-5- 
+5-
 6-
 ****************************************************************************/
 
