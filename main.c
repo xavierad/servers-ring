@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
     "\n - <find (j)>\n   TO FIND SOME KEY AND TO KNOW TO WHICH SERVER IT BELONGS;\n"
     "\n - <show>\n   TO SHOW ALL SERVER STATE INFO CONCERNING THE LOCAL, SUCCESSOR AND SECOND SUCCESSOR SERVER;\n"
     "\n - <leave>\n   TO LEAVE THE RING;\n"
-    "\n - <exit>\n   TO EXIT THE APPLICATION (LEAVE IS REQUIRED FIRST).\n"
+    "\n - <exit>\n   TO EXIT THE APPLICATION (IT WILL LEAVE THE RING FIRST).\n"
   );
   }
 
@@ -278,9 +278,12 @@ int main(int argc, char *argv[]) {
       }
 
       /* EXIT command */
-      else if(strcmp(token, "exit\n") == 0 &&  left == 1) printf("You closed the application!\n\n");
+      else if(strcmp(token, "exit\n") == 0 ){
+        /* Leave ring stuff first */
+        leave(&serv);
 
-      else if(strcmp(token, "exit\n") == 0 && left == 0) printf("You must leave the ring first!\n");
+        printf("You closed the application!\n\n");
+      }
 
       else printf("Command not found!\n");
 

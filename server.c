@@ -463,7 +463,7 @@ int init_udp_client(server **serv, char *ip, char *port)
   and listen for response (with 5 attempts)*/
   for(i = 0; i < maxtries; i++) {
 
-    sprintf(msg, "EFND %d\n", (*serv)->node_key);
+    sprintf(msg, "EFND %d", (*serv)->node_key);
     n = sendto(fd, msg, strlen(msg), 0, res->ai_addr, res->ai_addrlen);
     if(n==-1) {
        perror("(UDP) Error occurred in sending");
@@ -810,7 +810,7 @@ int tcpS(server** serv, fd_set rfds) {
 
           (*serv)->addrlen = sizeof((*serv)->addr);
           printf("Aqui!\n");
-          sprintf(msg, "EKEY %d %d %s %s\n", target_key, server_key, ip, port);
+          sprintf(msg, "EKEY %d %d %s %s", target_key, server_key, ip, port);
           n = sendto((*serv)->fd_udpS, msg, strlen(msg), 0, (struct sockaddr*)&((*serv)->addr), (*serv)->addrlen);
           if(n==-1) {
              perror("(UDP) Error occurred in sending");
