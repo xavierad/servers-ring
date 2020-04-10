@@ -104,6 +104,20 @@ int IsItMine( int k, server* serv)
 }
 
 /*******************************************************************************
+ * isAlone(server** serv)
+ *
+ * Description: check if the server is alone or not (a server is alone when its
+                  successor and predecessor is himself)
+ *
+ * returns: 1 if it is, 0 if not
+*******************************************************************************/
+int isAlone(server *serv) {
+
+  if(serv->node_key == serv->succ_key || serv->node_key == serv->pred_key) return 1;
+  else return 0;
+}
+
+/*******************************************************************************
  * compare_distance( int k, server* serv)
  *
  * Description: Evaluates the distances between the key the local server and
@@ -809,7 +823,6 @@ int tcpS(server** serv, fd_set rfds) {
           char msg[128];
 
           (*serv)->addrlen = sizeof((*serv)->addr);
-          printf("Aqui!\n");
           sprintf(msg, "EKEY %d %d %s %s", target_key, server_key, ip, port);
           n = sendto((*serv)->fd_udpS, msg, strlen(msg), 0, (struct sockaddr*)&((*serv)->addr), (*serv)->addrlen);
           if(n==-1) {
@@ -886,7 +899,6 @@ void tcpS_recv(server **serv, fd_set rfds){
   ssize_t n;
 
   if(FD_ISSET((*serv)->fd_pred, &rfds)){
-    printf("Aqui tcpS_recv!\n");
     if((n = read((*serv)->fd_pred, buffer, 128))!=0){
       if(n == -1) {
         perror("An error occurred on read() function!");
@@ -913,7 +925,6 @@ void tcpS_recv(server **serv, fd_set rfds){
         /* the successor server has the key */
         if(delegate == 0) {
 
-          printf("pred key %d\n", (*serv)->pred_key);
           k_fndinsucc(target_key, *serv);
 
           /* if source_key == pred_key, server sends the msg directly to the fd_pred, no need to create a TCP session */
@@ -1030,7 +1041,7 @@ int tcpC (server** serv, fd_set rfds) {
 
   /* fd_tcpC cannot be -1  ACHO QUE SE PODE TIRAR O fd_tcpC != -1  !!!!!*/
   if((*serv)->fd_tcpC != -1 && FD_ISSET((*serv)->fd_tcpC, &rfds)){
-    printf("Aqui tcpC!\n");
+
     if((n = read((*serv)->fd_tcpC, buffer, 128)) != 0){
       if (n == -1){
         perror("Not reading");
@@ -1055,7 +1066,6 @@ int tcpC (server** serv, fd_set rfds) {
             char msg[128];
 
             (*serv)->addrlen = sizeof((*serv)->addr);
-            printf("Aqui!\n");
             sprintf(msg, "EKEY %d %d %s %s\n", target_key, server_key, ip, port);
             n = sendto((*serv)->fd_udpS, msg, strlen(msg), 0, (struct sockaddr*)&((*serv)->addr), (*serv)->addrlen);
             if(n==-1) {

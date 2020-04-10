@@ -9,6 +9,8 @@ int distanceN (int k, int l);
 
 int IsItMine( int k, server* serv);
 
+int isAlone(server *serv);
+
 int compare_distance( int k, server* serv);
 
 void k_fndinsucc(int k, server* serv);
