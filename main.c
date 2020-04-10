@@ -5,7 +5,7 @@
 */
 
 /******************************** DÚVIDAS ********************************
-1- sentry ou entry feito por algum dos servidores de um anel criado (com pelo menos dois servidores) ?
+1-
 2- SIGPIPE ?
 ****************************************************************************/
 
@@ -15,7 +15,7 @@
 /******************************** FALTA FAZER *********************************
 2- (Falta check IP e port nos comandos sentry e entry) - à espera do mail do prof
 3- Verificar se são feitas todas as condições de erro nas chamadas de sistema (ver os restantes pontos logo antes à bibliografia)
-4- prevenir o sentry ou o entry quando existe o anel criado (pelo menos um sucessor que não seja o local)
+4
 5-
 6-
 ****************************************************************************/
