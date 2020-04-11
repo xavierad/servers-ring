@@ -5,32 +5,23 @@
 */
 
 /******************************** DÚVIDAS ********************************
-1-
-2- SIGPIPE ?
+
 ****************************************************************************/
 
 
 
 
 /******************************** FALTA FAZER *********************************
-2- (Falta check IP e port nos comandos sentry e entry) - à espera do mail do prof
-3- Verificar se são feitas todas as condições de erro nas chamadas de sistema (ver os restantes pontos logo antes à bibliografia)
-4
-5-
-6-
+1- Acabar a verificação de comandos (interface), mensagens (pesquisa de chava, saída, entrada)
+2- Falta check IP e port nos comandos sentry e entry
+3- Condições de erro nas chamadas de sistema (ver os restantes pontos logo antes à bibliografia)
+4-
 ****************************************************************************/
-
-
-/**************** PROJETO DE RCI - 2º SEMESTRE 2019/2020 **********************
- * Feito por: Miguel Carvalho    nº 84141
- *            Xavier Dias        nº 87136
- ******************************************************************************/
 
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
 
 #include "checks.h"
 #include "server.h"
@@ -44,8 +35,6 @@
 
 int main(int argc, char *argv[]) {
 
-  struct sigaction act;
-
   int f = 1; // flag to print out "\n >" in the while loop
 
   /* Command variables */
@@ -56,6 +45,11 @@ int main(int argc, char *argv[]) {
   char *ip = NULL; // IP address of the local server
   char *port = NULL; // port to be used  */
   server *serv = NULL; // struct server to allocate its state
+
+  /* Auxiliary variables: flags to know when server has left or entered */
+  //int left = 1;
+  //int entry = 0;
+  int inside = 0;
 
   /* File descriptors to be set in readfds vector */
   int maxfd=0, fd_parent=0, fd_pred=0, fd_tcpC=0, fd_updS=0;
@@ -95,31 +89,17 @@ int main(int argc, char *argv[]) {
 
     /* Everything is OK! Let's begin with the application */
     printf("\n____________________________________________________________\n");
-    printf("\n APPLICATION INITIALIZED!");
-    printf(" | IP addr.: %s  PORT: %s\n", ip, port);
-    printf("\n COMMANDS:\n"
-    "\n - <new (i)>\n   FOR A NEW SERVER (IT WILL OPEN A TCP CONNECTION WITH HIMSELF FIRST);\n"
-    "\n - <sentry (i) (succ) (succ.IP) (succ.TCP)>\n   TO ENTRY IN A RING KNOWING THE FUTURE SUCCESSOR;\n"
-    "\n - <entry (i) (boot) (boot.IP) (boot.TCP)>\n   TO ENTRY IN A RING WHERE SERVER WITH BOOT KEY WILL FIND FOR FUTURES SUCCESSOR;\n"
-    "\n - <find (j)>\n   TO FIND SOME KEY AND TO KNOW TO WHICH SERVER IT BELONGS;\n"
-    "\n - <show>\n   TO SHOW ALL SERVER STATE INFO CONCERNING THE LOCAL, SUCCESSOR AND SECOND SUCCESSOR SERVER;\n"
-    "\n - <leave>\n   TO LEAVE THE RING;\n"
-    "\n - <exit>\n   TO EXIT THE APPLICATION (IT WILL LEAVE THE RING FIRST).\n"
-  );
-  }
+    printf("\nApplication initialized!\n");
+    printf("\n-IP addr.: %s\n-PORT: %s\n\n", ip, port);
 
-  memset(&act, 0, sizeof act);
-  act.sa_handler = SIG_IGN;
-  if(sigaction(SIGPIPE, &act, NULL) == -1) {
-    perror("Erro in sigaction()");
-    exit(1);
   }
 
   /* Initialization of TCP socket */
   fd_parent = init_fd_parent();
 
-  /* application loop, while the user does not enter "exit" */
-  while(strcmp(cmd, "exit\n") != 0 ){
+  /* application loop, while the user does not enter "exit" or not left */
+  //while(strcmp(cmd, "exit\n") != 0 || left != 1){
+  while(strcmp(cmd, "exit\n") != 0 || inside == 1){
 
     memset(cmd, '\0', sizeof(cmd)); // setting all values of cmd
 
@@ -156,9 +136,7 @@ int main(int argc, char *argv[]) {
 
       token = strtok(cmd, " "); // retrieve each argument of cmd, separated by a space
 
-      /* VALIDATING THE COMMANDS */
-
-      /* NEW command */
+      /* validating the commands */
       if(strcmp(token, "new") == 0){
 
         if(!checkCommand_NEW_FIND(token)) printf("Did you mean something like 'new <i>'?\n");
@@ -178,11 +156,11 @@ int main(int argc, char *argv[]) {
         }
       }
 
-      /* ENTRY command */
       else if(strncmp(token, "entry", 5) == 0){
 
         if(serv == NULL) printf("No ring created!\n");
-        else if(!isAlone(serv)) printf("You cannot do an 'entry' command!\n"); // because the server did not leave or already entered
+        //else if(!left || entry) printf("You cannot do an 'entry' command!\n"); // because the server did not leave or already entered
+        else if(inside) printf("You cannot do an 'entry' command!\n"); // because the server did not leave or already entered
         else if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'entry <i> <boot> <boot.IP> <boot.TCP>'?\n");
         else {
 
@@ -192,14 +170,17 @@ int main(int argc, char *argv[]) {
             fd_tcpC = init_tcp_client(&serv, &readfds, "NEW"); // init TCP with known successor
 
             printf("The new server has entered!\n");
+            //entry = 1;
+            //left = 0;
+            inside = 1;
           }
         }
       }
 
-      /* SENTRY command */
       else if(strncmp(token, "sentry", 5) == 0){
         if(serv == NULL) printf("No ring created!\n");
-        else if(!isAlone(serv)) printf("You cannot do a 'sentry' command!\n"); // because the server did not leave or already entered
+        //else if(!left || entry) printf("You cannot do a 'sentry' command!\n"); // because the server did not leave or already entered
+        else if(inside) printf("You cannot do a 'sentry' command!\n"); // because the server did not leave or already entered
         else if(!checkCommand_S_ENTRY(token)) printf("Did you mean something like 'sentry <i> <succi> <succi.IP> <succi.TCP>'?\n");
         else {
 
@@ -210,14 +191,17 @@ int main(int argc, char *argv[]) {
             fd_tcpC = init_tcp_client(&serv, &readfds, "NEW");
 
             printf("The new server has entered!\n");
+            //entry = 1;
+            //left = 0;
+            inside = 1;
           }
         }
       }
 
-      /* LEAVE command */
       else if(strcmp(token, "leave\n") == 0){
         if(serv == NULL) printf("No ring created!\n");
-        else if(isAlone(serv)) printf("Server is not part of a ring!\n");
+        //else if(left) printf("Already letf!\n");
+        else if(!inside) printf("Server is not part of a ring!\n");
         else {
 
           /* Leave ring stuff here */
@@ -228,10 +212,12 @@ int main(int argc, char *argv[]) {
           fd_tcpC = 0;
 
           printf("Server left!\n");
+          //left = 1;
+          //entry = 0;
+          inside = 0;
         }
       }
 
-      /* SHOW command */
       else if(strcmp(token, "show\n") == 0){
         if(serv == NULL) printf("No ring created!\n");
         else {
@@ -240,7 +226,6 @@ int main(int argc, char *argv[]) {
         }
       }
 
-      /* FIND command */
       else if(strcmp(token, "find") == 0){
 
         if(!checkCommand_NEW_FIND(token)) printf("Did you mean something like 'find <i>'?\n");
@@ -266,24 +251,17 @@ int main(int argc, char *argv[]) {
         }
       }
 
-      /* EXIT command */
-      else if(strcmp(token, "exit\n") == 0 ){
-        /* Leave ring stuff first */
-        leave(&serv);
+      //else if(strcmp(token, "exit\n") == 0 && left == 1) printf("You closed the application!\n\n");
+      else if(strcmp(token, "exit\n") == 0 &&  inside == 0) printf("You closed the application!\n\n");
 
-        /* Resetting values to be set to readfds */
-        fd_pred = 0;
-        fd_tcpC = 0;
 
-        printf("You closed the application!\n\n");
-      }
+      //else if(strcmp(token, "exit\n") == 0 && left == 0) printf("You must leave the ring first!\n");
+      else if(strcmp(token, "exit\n") == 0 && inside == 1) printf("You must leave the ring first!\n");
+
 
       else printf("Command not found!\n");
 
-      if (args != NULL ){
-        free(args);
-        args = NULL;
-      }
+      if (args != NULL ) free(args);
 
       f = 1;
 
