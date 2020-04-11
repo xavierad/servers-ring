@@ -15,9 +15,7 @@
 /******************************** FALTA FAZER *********************************
 2- (Falta check IP e port nos comandos sentry e entry) - à espera do mail do prof
 3- Verificar se são feitas todas as condições de erro nas chamadas de sistema (ver os restantes pontos logo antes à bibliografia)
-4
-5-
-6-
+
 ****************************************************************************/
 
 
