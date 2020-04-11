@@ -221,7 +221,7 @@ int main(int argc, char *argv[]) {
         else {
 
           /* Leave ring stuff here */
-          leave(&serv);
+          if( serv != NULL) leave(&serv);
 
           /* Resetting values to be set to readfds */
           fd_pred = 0;
