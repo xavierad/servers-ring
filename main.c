@@ -98,20 +98,20 @@ int main(int argc, char *argv[]) {
     printf("\n APPLICATION INITIALIZED!");
     printf(" | IP addr.: %s  PORT: %s\n", ip, port);
     printf("\n COMMANDS:\n"
-    "\n - <new (i)>\n   FOR A NEW SERVER (IT WILL OPEN A TCP CONNECTION WITH HIMSELF FIRST);\n"
-    "\n - <sentry (i) (succ) (succ.IP) (succ.TCP)>\n   TO ENTRY IN A RING KNOWING THE FUTURE SUCCESSOR;\n"
-    "\n - <entry (i) (boot) (boot.IP) (boot.TCP)>\n   TO ENTRY IN A RING WHERE SERVER WITH BOOT KEY WILL FIND FOR FUTURES SUCCESSOR;\n"
-    "\n - <find (j)>\n   TO FIND SOME KEY AND TO KNOW TO WHICH SERVER IT BELONGS;\n"
-    "\n - <show>\n   TO SHOW ALL SERVER STATE INFO CONCERNING THE LOCAL, SUCCESSOR AND SECOND SUCCESSOR SERVER;\n"
-    "\n - <leave>\n   TO LEAVE THE RING;\n"
-    "\n - <exit>\n   TO EXIT THE APPLICATION (IT WILL LEAVE THE RING FIRST).\n"
+    "\n - <new (i)>\n   CREATE A NEW RING (A SERVER WILL OPEN A TCP CONNECTIONS WITH HIMSELF FIRST);\n"
+    "\n - <sentry (i) (succ) (succ.IP) (succ.TCP)>\n   SERVER ENTERS IN A RING KNOWING ITS FUTURE SUCCESSOR;\n"
+    "\n - <entry (i) (boot) (boot.IP) (boot.TCP)>\n   SERVER ENTERS IN A RING WHERE SERVER WITH BOOT KEY WILL FIND ITS FUTURE SUCCESSOR;\n"
+    "\n - <find (j)>\n   FIND A KEY AND KNOW WHICH SERVER HAS IT STORE;\n"
+    "\n - <show>\n   SHOW LOCAL SERVER STATE INFO CONCERNING ITSELF, ITS SUCCESSOR AND SECOND SUCCESSOR SERVERS;\n"
+    "\n - <leave>\n   LEAVE THE RING;\n"
+    "\n - <exit>\n   EXIT THE APPLICATION (IT WILL LEAVE THE RING FIRST).\n"
   );
   }
 
   memset(&act, 0, sizeof act);
   act.sa_handler = SIG_IGN;
   if(sigaction(SIGPIPE, &act, NULL) == -1) {
-    perror("Erro in sigaction()");
+    perror("Error in sigaction()");
     exit(1);
   }
 
@@ -269,7 +269,7 @@ int main(int argc, char *argv[]) {
       /* EXIT command */
       else if(strcmp(token, "exit\n") == 0 ){
         /* Leave ring stuff first */
-        leave(&serv);
+        if( serv != NULL) leave(&serv);
 
         /* Resetting values to be set to readfds */
         fd_pred = 0;
