@@ -507,8 +507,8 @@ int init_udp_client(server **serv, char *ip, char *port)
 
       /* Reading the buffer until the '\n' character */
       for (int i = 0; i < strlen(buffer); i++) {
-        if(buffer[i] == '\n' && i < (strlen(buffer) - 1)) {
-          buffer[i+1] = '\0';
+        if(buffer[i] == '\n') {
+          buffer[i] = '\0';
         }
       }
 
@@ -710,8 +710,8 @@ void udpS(server** serv, fd_set rfds) {
 
     /* Reading the buffer until the '\n' character */
     for (int i = 0; i < strlen(buffer); i++) {
-      if(buffer[i] == '\n' && i < (strlen(buffer) - 1)) {
-        buffer[i+1] = '\0';
+      if(buffer[i] == '\n') {
+        buffer[i] = '\0';
       }
     }
 
@@ -803,8 +803,8 @@ int tcpS(server** serv, fd_set rfds) {
 
       /* Reading the buffer until the '\n' character */
       for (int i = 0; i < strlen(buffer); i++) {
-        if(buffer[i] == '\n' && i < (strlen(buffer) - 1)) {
-          buffer[i+1] = '\0';
+        if(buffer[i] == '\n') {
+          buffer[i] = '\0';
         }
       }
 
@@ -907,8 +907,8 @@ void tcpS_recv(server **serv, fd_set rfds){
 
       /* Reading the buffer until the '\n' character */
       for (int i = 0; i < strlen(buffer); i++) {
-        if(buffer[i] == '\n' && i < (strlen(buffer) - 1)) {
-          buffer[i+1] = '\0';
+        if(buffer[i] == '\n') {
+          buffer[i] = '\0';
         }
       }
 
@@ -1050,8 +1050,8 @@ int tcpC (server** serv, fd_set rfds) {
 
         /* Reading the buffer until the '\n' character */
         for (int i = 0; i < strlen(buffer); i++) {
-          if(buffer[i] == '\n' && i < (strlen(buffer) - 1)) {
-            buffer[i+1] = '\0';
+          if(buffer[i] == '\n') {
+            buffer[i] = '\0';
           }
         }
 
