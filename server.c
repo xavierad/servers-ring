@@ -1059,6 +1059,7 @@ int tcpC (server** serv, fd_set rfds) {
         if(buffer[0] == 'K') {
 
           sscanf(buffer, "%s %d %d %s %s", first, &target_key, &server_key, ip, port);
+          printf("Key %d found in the server %d %s %s\n", target_key, server_key, ip, port);
 
           /* if it is to reply through udp connection */
           if((*serv)->udp_reply == 1) {
