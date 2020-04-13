@@ -948,7 +948,6 @@ void tcpS_recv(server **serv, fd_set rfds){
             printf("Message to be sent to successor: %s\n", msg);
           }
           /* else server creates a temporary tcp client with the source */
-          //melhorar!!!
           else {
             printf("Initiating a temporary TCP session ...\n");
             int temp_fd = init_fd_parent();
@@ -1079,8 +1078,6 @@ int tcpC (server** serv, fd_set rfds) {
         }
 
         else {
-
-
           sscanf(buffer, "%s %d %s %s", first, &key, ip, port);
 
           /* Save my 2nd succesor info */
