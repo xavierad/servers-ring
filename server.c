@@ -903,7 +903,6 @@ void tcpS_recv(server **serv, fd_set rfds){
       if(n == -1) {
         perror("An error occurred on read() function!");
       }
-      printf("Message received from predecessor: %s\n", buffer);
 
       /* Reading the buffer until the '\n' character */
       for (int i = 0; i < strlen(buffer); i++) {
@@ -911,6 +910,7 @@ void tcpS_recv(server **serv, fd_set rfds){
           buffer[i] = '\0';
         }
       }
+      printf("Message received from predecessor: %s\n", buffer);
 
       /* Interpret message here and answer to client if needed*/
       if(buffer[0] == 'F') sscanf(buffer, "%s %d %d %s %s", first, &target_key, &source_key, ip, port);
