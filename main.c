@@ -1,11 +1,4 @@
 
-/******************************** FALTA FAZER *********************************
-2- (Falta check IP e port nos comandos sentry e entry) - à espera do mail do prof
-3- Verificar se são feitas todas as condições de erro nas chamadas de sistema (ver os restantes pontos logo antes à bibliografia)
-
-****************************************************************************/
-
-
 /**************** PROJETO DE RCI - 2º SEMESTRE 2019/2020 **********************
  *
  * Feito por: Miguel Carvalho    nº 84141
