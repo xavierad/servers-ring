@@ -150,6 +150,7 @@ int main(int argc, char *argv[]) {
 
         if(!checkCommand_NEW_FIND(token)) printf("Did you mean something like 'new <i>'?\n");
         else if(serv != NULL) printf("Cannot create a new ring!\n");
+        else if(atoi(args[1]) >= N ) printf("The maximum key alowed in this ring is %d\n", N-1);
         else
         {
           /* Ring (Server) creation stuff here */
